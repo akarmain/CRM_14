@@ -1,0 +1,6 @@
+# Cursor Rules
+- Follow the layered backend architecture (API → service → repository → persistence).
+- Keep backend imports within the `app` package; avoid circular dependencies.
+- Use `ruff check` and `ruff format` for Python formatting.
+- Use `npm run lint` and `npm run format` for frontend formatting.
+- Do not edit generated files such as `node_modules/` or `.output/`.
