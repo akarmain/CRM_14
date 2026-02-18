@@ -1,0 +1,92 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<MetaDataObject xmlns="http://v8.1c.ru/8.3/MDClasses" xmlns:app="http://v8.1c.ru/8.2/managed-application/core" xmlns:cfg="http://v8.1c.ru/8.1/data/enterprise/current-config" xmlns:cmi="http://v8.1c.ru/8.2/managed-application/cmi" xmlns:ent="http://v8.1c.ru/8.1/data/enterprise" xmlns:lf="http://v8.1c.ru/8.2/managed-application/logform" xmlns:style="http://v8.1c.ru/8.1/data/ui/style" xmlns:sys="http://v8.1c.ru/8.1/data/ui/fonts/system" xmlns:v8="http://v8.1c.ru/8.1/data/core" xmlns:v8ui="http://v8.1c.ru/8.1/data/ui" xmlns:web="http://v8.1c.ru/8.1/data/ui/colors/web" xmlns:win="http://v8.1c.ru/8.1/data/ui/colors/windows" xmlns:xen="http://v8.1c.ru/8.3/xcf/enums" xmlns:xpr="http://v8.1c.ru/8.3/xcf/predef" xmlns:xr="http://v8.1c.ru/8.3/xcf/readable" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="2.20">
+	<Enum uuid="78072b8a-d87e-4664-a928-1b16db45fe18">
+		<InternalInfo>
+			<xr:GeneratedType name="EnumRef.source" category="Ref">
+				<xr:TypeId>fe35be07-eb21-44b9-9bf2-6543e420f686</xr:TypeId>
+				<xr:ValueId>3265afdb-ba6d-4e62-8a2a-1b9be37ee453</xr:ValueId>
+			</xr:GeneratedType>
+			<xr:GeneratedType name="EnumManager.source" category="Manager">
+				<xr:TypeId>53829748-5ddb-43f5-a04b-46b901a98d54</xr:TypeId>
+				<xr:ValueId>e1af10bb-7322-4ee7-abeb-4803b42085cd</xr:ValueId>
+			</xr:GeneratedType>
+			<xr:GeneratedType name="EnumList.source" category="List">
+				<xr:TypeId>1559b357-10ef-4c1f-8bb1-ccff1948020a</xr:TypeId>
+				<xr:ValueId>6224195c-8cd1-433e-8120-5b5443b254d2</xr:ValueId>
+			</xr:GeneratedType>
+		</InternalInfo>
+		<Properties>
+			<Name>source</Name>
+			<Synonym>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Source</v8:content>
+				</v8:item>
+			</Synonym>
+			<Comment/>
+			<UseStandardCommands>true</UseStandardCommands>
+			<Characteristics/>
+			<QuickChoice>true</QuickChoice>
+			<ChoiceMode>BothWays</ChoiceMode>
+			<DefaultListForm>Enum.source.Form.advertising</DefaultListForm>
+			<DefaultChoiceForm/>
+			<AuxiliaryListForm/>
+			<AuxiliaryChoiceForm/>
+			<ListPresentation/>
+			<ExtendedListPresentation/>
+			<Explanation/>
+			<ChoiceHistoryOnInput>Auto</ChoiceHistoryOnInput>
+		</Properties>
+		<ChildObjects>
+			<EnumValue uuid="3e010db5-df7d-483c-9a63-218ae2abdce7">
+				<Properties>
+					<Name>advertising</Name>
+					<Synonym>
+						<v8:item>
+							<v8:lang>ru</v8:lang>
+							<v8:content>Advertising</v8:content>
+						</v8:item>
+					</Synonym>
+					<Comment/>
+				</Properties>
+			</EnumValue>
+			<EnumValue uuid="4a9ac75a-3f44-487a-9337-20d28c5ad21a">
+				<Properties>
+					<Name>website</Name>
+					<Synonym>
+						<v8:item>
+							<v8:lang>ru</v8:lang>
+							<v8:content>Website</v8:content>
+						</v8:item>
+					</Synonym>
+					<Comment/>
+				</Properties>
+			</EnumValue>
+			<EnumValue uuid="d32d8f4d-882e-472a-9f70-c282823610a2">
+				<Properties>
+					<Name>recommendation</Name>
+					<Synonym>
+						<v8:item>
+							<v8:lang>ru</v8:lang>
+							<v8:content>Recommendation</v8:content>
+						</v8:item>
+					</Synonym>
+					<Comment/>
+				</Properties>
+			</EnumValue>
+			<EnumValue uuid="d4a953c7-e79c-4ff5-a2ab-37d078eba407">
+				<Properties>
+					<Name>event</Name>
+					<Synonym>
+						<v8:item>
+							<v8:lang>ru</v8:lang>
+							<v8:content>Event</v8:content>
+						</v8:item>
+					</Synonym>
+					<Comment/>
+				</Properties>
+			</EnumValue>
+			<Form>advertising</Form>
+		</ChildObjects>
+	</Enum>
+</MetaDataObject>

@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<ConfigDumpInfo xmlns="http://v8.1c.ru/8.3/xcf/dumpinfo" xmlns:xen="http://v8.1c.ru/8.3/xcf/enums" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" format="Hierarchical" version="2.20">
+	<ConfigVersions>
+		<Metadata name="Catalog.leads" id="ec2db4e8-4d92-4d6e-b577-66e9a88ef91b" configVersion="aac171af87531e42929cb71b786a20bd00000000">
+			<Metadata name="Catalog.leads.Attribute.current_stage" id="117bcad2-6ab1-4fef-9f5b-0dbb050373c5"/>
+			<Metadata name="Catalog.leads.Attribute.closed_at" id="20cd6ecb-a7a7-47e8-b5a6-488262e0587b"/>
+			<Metadata name="Catalog.leads.Attribute.lead_id" id="215dc692-ca10-4265-9cae-93d51f11a6e7"/>
+			<Metadata name="Catalog.leads.Attribute.owner_fio" id="949b96fd-55e8-4a4f-ba44-726456792d08"/>
+			<Metadata name="Catalog.leads.Attribute.created_at" id="a54988a1-09bf-4103-b488-17dbf8e1247c"/>
+			<Metadata name="Catalog.leads.Attribute.source" id="c0ec245b-b720-4798-a8c5-6d32078f9c74"/>
+		</Metadata>
+		<Metadata name="Catalog.leads.ObjectModule" id="ec2db4e8-4d92-4d6e-b577-66e9a88ef91b.0" configVersion="dbbffc53d17e0e44aa98995d7239480b00000000"/>
+		<Metadata name="Configuration.Конфигурация" id="e9fe5a59-6a72-4b59-a4bf-73220af1e4c2" configVersion="2f773839dfcb4641a53eb01b4721a6a700000000"/>
+		<Metadata name="Enum.current_stage" id="9c104265-a3a0-46af-8f75-d0e3287b7f5c" configVersion="a6de2252a4f93f4a905351e07977d33200000000">
+			<Metadata name="Enum.current_stage.EnumValue.lost" id="4f0c827b-fcb3-4e98-b9de-98d74cc9367a"/>
+			<Metadata name="Enum.current_stage.EnumValue.new" id="8260bd73-37b0-4864-a6e0-38d17197f4ef"/>
+			<Metadata name="Enum.current_stage.EnumValue.qualified" id="92119f07-dfae-4601-91a8-1d599e95963b"/>
+			<Metadata name="Enum.current_stage.EnumValue.proposal" id="b75ceb20-bf7a-4b47-bb58-3d73da0b9281"/>
+			<Metadata name="Enum.current_stage.EnumValue.won" id="ba2166b9-b98f-42d7-b483-5c141dac085a"/>
+		</Metadata>
+		<Metadata name="Enum.source" id="78072b8a-d87e-4664-a928-1b16db45fe18" configVersion="e390ee9a43a2a74f9d7307d65fffd2e600000000">
+			<Metadata name="Enum.source.EnumValue.advertising" id="3e010db5-df7d-483c-9a63-218ae2abdce7"/>
+			<Metadata name="Enum.source.EnumValue.website" id="4a9ac75a-3f44-487a-9337-20d28c5ad21a"/>
+			<Metadata name="Enum.source.EnumValue.recommendation" id="d32d8f4d-882e-472a-9f70-c282823610a2"/>
+			<Metadata name="Enum.source.EnumValue.event" id="d4a953c7-e79c-4ff5-a2ab-37d078eba407"/>
+		</Metadata>
+		<Metadata name="Enum.source.Form.advertising" id="46f0ad2f-69b8-4dfb-a639-8d0312285f8f" configVersion="02ed8b4c9579e740b3e9343efe24957000000000"/>
+		<Metadata name="Enum.source.Form.advertising.Form" id="46f0ad2f-69b8-4dfb-a639-8d0312285f8f.0" configVersion="285ea5a909fb964a824746561e6c50f800000000"/>
+		<Metadata name="InformationRegister.lead_stages" id="cd820c9f-6318-46e9-b85d-5afafae4fa15" configVersion="61d76ae23e6d2941a6e6c494aa72b9cc00000000">
+			<Metadata name="InformationRegister.lead_stages.Dimension.lead" id="06a7bddb-0255-4ed7-acdf-b2e7488b2aa9"/>
+			<Metadata name="InformationRegister.lead_stages.Resource.left_at" id="2a893d58-c84d-48cf-bc26-bead284a7d72"/>
+			<Metadata name="InformationRegister.lead_stages.Dimension.stage" id="c0c66d85-3a38-417b-bfbc-beed32b5e771"/>
+			<Metadata name="InformationRegister.lead_stages.Resource.duration" id="c72fccfb-bbad-486b-b055-65d0ad4e0b1d"/>
+			<Metadata name="InformationRegister.lead_stages.Resource.entered_at" id="dddad09a-6634-49bf-a12c-9441010e4669"/>
+		</Metadata>
+		<Metadata name="Language.Русский" id="e07a7f1d-3020-4593-82af-d99cd7473b19" configVersion="de468ae8ad346048b76824e2a1cefe9400000000"/>
+	</ConfigVersions>
+</ConfigDumpInfo>
