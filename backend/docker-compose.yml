@@ -1,0 +1,21 @@
+services:
+  app:
+    build:
+      context: .
+    environment:
+      STORAGE_MODE: ${STORAGE_MODE:-memo}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=2)",
+        ]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 10s

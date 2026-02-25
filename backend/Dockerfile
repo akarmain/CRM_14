@@ -1,21 +1,16 @@
-FROM python:3.12-slim
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
 
 WORKDIR /app
 
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+ENV UV_LINK_MODE=copy \
+    UV_COMPILE_BYTECODE=1
 
-RUN pip install --no-cache-dir --upgrade pip
+COPY pyproject.toml ruff.toml mypy.ini ./
+RUN uv sync --no-dev --no-install-project
 
-COPY pyproject.toml /app/pyproject.toml
-RUN pip install --no-cache-dir .
-
-COPY app /app/app
-COPY alembic.ini /app/alembic.ini
-COPY entrypoint.sh /app/entrypoint.sh
-
-RUN chmod +x /app/entrypoint.sh
+COPY app ./app
+RUN uv sync --no-dev
 
 EXPOSE 8000
 
-CMD ["/app/entrypoint.sh"]
+CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

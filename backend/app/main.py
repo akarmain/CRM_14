@@ -1,31 +1,23 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import contacts
-from app.core.config import settings
-from app.core.logging import configure_logging
+from app.core.config import get_settings
+from app.core.errors import register_exception_handlers
+from app.core.logging import setup_logging
+from app.interface.api.v1.routes_health import router as health_router
+from app.interface.api.v1.routes_leads import router as leads_router
 
 
 def create_app() -> FastAPI:
-    configure_logging(settings.log_level)
-    app = FastAPI(title=settings.app_name)
+    settings = get_settings()
+    setup_logging(settings.log_level)
 
-    app.add_middleware(
-        CORSMiddleware,
-        # allow_origins=settings.cors_origins_list, # Опасный момент 
-        allow_credentials=False,
-        allow_methods=["*"],
-        allow_headers=["*"],
-        allow_origins=["*"],
-    )
+    application = FastAPI(title="mini_crm_simple", version="0.1.0")
+    register_exception_handlers(application)
 
-    app.include_router(contacts.router)
+    application.include_router(health_router, prefix="/api/v1", tags=["health"])
+    application.include_router(leads_router, prefix="/api/v1", tags=["leads"])
 
-    @app.get("/health")
-    async def health() -> dict[str, str]:
-        return {"status": "ok"}
-
-    return app
+    return application
 
 
 app = create_app()

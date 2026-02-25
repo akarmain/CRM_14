@@ -1,42 +1,58 @@
-# leetbook
+# CRM_14
+Этот проект представляет собой учебную MVP-версию мини-CRM системы для работы с лидами. Реализована карточка лида, отслеживание стадий (new → qualified → proposal → won / lost), отчёт «Воронка продаж» и расчёт ключевых метрик.
 
-Контактная книжка (Telegram Mini App) с Nuxt 4 + FastAPI.
+Цель проекта — повысить прозрачность воронки продаж и предоставить инструмент для анализа конверсии по этапам и средней длительности стадий. Все расчёты выполняются на синтетических данных без использования персональной информации.
 
-## Быстрый старт (Docker)
+В рамках MVP реализованы: импорт данных из CSV (с идемпотентной повторной загрузкой), базовые валидации, отчёт с фильтрами (по периоду, источнику и менеджеру), а также UI-прототип канбан-доски и мок REST API `/leads`.
+
+Проект разработан в учебных целях без боевых интеграций и прод-развёртывания. Архитектура включает 1С-артефакты (справочник, отчёт, регистры), обработку данных и прототип пользовательского интерфейса.
+
+## Команда проекта
+
+| ФИО           | Роль                    |
+| ------------- | ----------------------- |
+| Кармаев Андрей Александрович ИНБО-30-25   | Аналитик / Project Lead |
+| Кучин Иван Вадимович ЭПБО-01-25  | 1С-разработчик          |
+| Рахимов Шамиль Рашитович ЭФБО-02-25  | Full-stack (UI)         |
+| Маркина Майя Витальевна ЭФБО-02-25 | Full-stack (API)        |
+| Полухина Елизавета Константиновна ЭФБО-02-25 | Full-stack (Data / KPI) |
+
+## Локальный запуск Backend
+
+Подробная инструкция вынесена в отдельный файл:
+- `backend/README.md`
+
+Коротко:
+1. Перейти в `backend`
+2. Выполнить `uv sync`
+3. Запустить `make run`
+4. Проверить `http://localhost:8000/docs`
+
+## Публикация на GitHub
+
+Минимальный порядок действий:
+1. Создать новый пустой репозиторий на GitHub (без README и .gitignore).
+2. В корне проекта выполнить:
+
 ```bash
-docker compose up --build
+git init
+git add .
+git commit -m "Initial commit"
+git branch -M main
+git remote add origin https://github.com/<username>/<repo>.git
+git push -u origin main
 ```
 
-- Frontend: `http://localhost:3000`
-- Backend: `http://localhost:8000`
-- Проверка API: `curl http://localhost:8000/api/contacts`
+Перед публикацией проверь:
+- В репозиторий не попали `.env`, `.venv`, `node_modules` и локальные IDE-файлы.
+- В репозитории есть только `*.example` для переменных окружения.
+- Проект запускается по инструкции из `backend/README.md`.
 
-## Локальная разработка
-Frontend (из `frontend/`):
-```bash
-npm install
-npm run dev
-```
+## Стек технологий
 
-Backend (из `backend/`):
-```bash
-uv venv
-source .venv/bin/activate
-uv pip install -e ".[dev]"
-alembic upgrade head
-python -m app.db.seed
-uv run main.py
-```
-
-Если используешь только `uv`, достаточно:
-```bash
-uv run alembic -c alembic.ini upgrade head
-uv run python -m app.db.seed
-uv run main.py
-```
-
-По умолчанию CORS открыт (`CORS_ORIGINS=*`). Чтобы ограничить доступ, установи `CORS_ORIGINS=http://localhost:3000,http://192.168.0.243:3000` в `.env`.
-
-## Архитектура
-- Backend слои: API → service → repository → persistence (`backend/app/*`).
-- Frontend страницы в `frontend/app/pages`, API-клиент в `frontend/app/lib/api.ts`.
+- Backend: `Python 3.12+`, `FastAPI`, `Uvicorn`, `Pydantic v2`, `pydantic-settings`.
+- Архитектура backend: `Clean Architecture` (Domain/Application/Infrastructure/Interface), dependency inversion через порты.
+- Хранилище в MVP: in-memory адаптер `memo` + заглушка адаптера под `1C`.
+- Frontend: `Nuxt 3/4`, `Vue 3`, `TypeScript`, `Tailwind CSS`, `shadcn-nuxt`.
+- Инструменты качества: `pytest`, `ruff`, `mypy`, `eslint`, `prettier`.
+- Контейнеризация: `Docker`, `docker-compose` (опционально для локальной разработки).
