@@ -245,6 +245,7 @@
 		</Properties>
 		<ChildObjects>
 			<Language>Русский</Language>
+			<HTTPService>Service</HTTPService>
 			<Catalog>leads</Catalog>
 			<Enum>current_stage</Enum>
 			<Enum>source</Enum>

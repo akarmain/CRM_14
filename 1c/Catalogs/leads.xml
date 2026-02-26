@@ -173,11 +173,11 @@
 			</Attribute>
 			<Attribute uuid="117bcad2-6ab1-4fef-9f5b-0dbb050373c5">
 				<Properties>
-					<Name>current_stage</Name>
+					<Name>stage</Name>
 					<Synonym>
 						<v8:item>
 							<v8:lang>ru</v8:lang>
-							<v8:content>Текущая стадия</v8:content>
+							<v8:content>Стадия</v8:content>
 						</v8:item>
 					</Synonym>
 					<Comment/>
@@ -266,10 +266,11 @@
 					</Synonym>
 					<Comment/>
 					<Type>
-						<v8:Type>xs:dateTime</v8:Type>
-						<v8:DateQualifiers>
-							<v8:DateFractions>Date</v8:DateFractions>
-						</v8:DateQualifiers>
+						<v8:Type>xs:string</v8:Type>
+						<v8:StringQualifiers>
+							<v8:Length>10</v8:Length>
+							<v8:AllowedLength>Variable</v8:AllowedLength>
+						</v8:StringQualifiers>
 					</Type>
 					<PasswordMode>false</PasswordMode>
 					<Format/>
