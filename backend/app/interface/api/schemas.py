@@ -43,6 +43,7 @@ class StageEventResponse(BaseModel):
     stage: LeadStage
     entered_at: datetime
     left_at: datetime | None
+    approved: bool
     comment: StageCommentResponse | None = None
 
 

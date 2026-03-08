@@ -83,6 +83,7 @@ class MemoRepositories(LeadRepository, StageEventRepository, CommentRepository):
         lead_id: int,
         stage: LeadStage,
         entered_at: datetime,
+        approved: bool = True,
     ) -> LeadStageEvent:
         async with self._lock:
             if lead_id not in self._leads_by_id:
@@ -102,6 +103,7 @@ class MemoRepositories(LeadRepository, StageEventRepository, CommentRepository):
                 stage=stage,
                 entered_at=entered_at,
                 left_at=None,
+                approved=approved,
             )
             self._stage_events_by_id[created.id] = created
             self._stage_event_ids_by_lead.setdefault(lead_id, []).append(created.id)

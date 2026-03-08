@@ -48,6 +48,7 @@ class MoveStageUseCase:
             lead_id=lead.id,
             stage=stage,
             entered_at=now,
+            approved=True,
         )
         updated_lead = await self._lead_repository.update_stage(lead.id, new_stage=stage)
 

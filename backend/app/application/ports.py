@@ -34,6 +34,7 @@ class StageEventRepository(Protocol):
         lead_id: int,
         stage: LeadStage,
         entered_at: datetime,
+        approved: bool = True,
     ) -> LeadStageEvent:
         ...
 

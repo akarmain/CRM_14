@@ -92,6 +92,7 @@ async def move_stage(
             stage=result.stage_event.stage,
             entered_at=result.stage_event.entered_at,
             left_at=result.stage_event.left_at,
+            approved=result.stage_event.approved,
             comment=comment_payload,
         ),
     )
@@ -115,6 +116,7 @@ async def list_stages(
                 stage=item.stage_event.stage,
                 entered_at=item.stage_event.entered_at,
                 left_at=item.stage_event.left_at,
+                approved=item.stage_event.approved,
                 comment=comment_payload,
             )
         )

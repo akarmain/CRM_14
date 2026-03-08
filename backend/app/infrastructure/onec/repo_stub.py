@@ -35,6 +35,7 @@ class OneCRepositoryStub(LeadRepository, StageEventRepository, CommentRepository
         lead_id: int,
         stage: LeadStage,
         entered_at: datetime,
+        approved: bool = True,
     ) -> LeadStageEvent:
         raise NotImplementedError(self._MSG)
 

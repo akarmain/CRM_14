@@ -35,5 +35,6 @@ class CreateLeadUseCase:
             lead_id=created.id,
             stage=LeadStage.new,
             entered_at=now,
+            approved=True,
         )
         return created

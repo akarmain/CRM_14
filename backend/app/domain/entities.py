@@ -22,6 +22,7 @@ class LeadStageEvent:
     stage: LeadStage
     entered_at: datetime
     left_at: datetime | None
+    approved: bool
 
 
 @dataclass(slots=True)
