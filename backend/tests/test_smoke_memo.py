@@ -48,3 +48,28 @@ async def test_smoke_create_and_move_stage(monkeypatch: pytest.MonkeyPatch) -> N
         assert len(stages) == 2
         assert stages[0]["stage"] == "new"
         assert stages[1]["stage"] == "qualified"
+
+
+@pytest.mark.anyio
+async def test_new_lead_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("STORAGE_MODE", "memo")
+    get_settings.cache_clear()
+    reset_container()
+
+    app = create_app()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post(
+            "/api/v1/new-lead",
+            json={
+                "owner": "manager_1",
+                "title": "Lead from legacy endpoint",
+                "notes": "Created via /new-lead",
+            },
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["owner"] == "manager_1"
+        assert payload["current_stage"] == "new"
+        assert payload["source_code"] == "other"

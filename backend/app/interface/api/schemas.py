@@ -13,6 +13,12 @@ class LeadCreateRequest(BaseModel):
     lead_uid: str | None = None
 
 
+class NewLeadRequest(BaseModel):
+    owner: Users
+    title: str | None = Field(default=None, max_length=255)
+    notes: str | None = None
+
+
 class LeadResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

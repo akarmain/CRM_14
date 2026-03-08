@@ -18,6 +18,7 @@ from app.interface.api.schemas import (
     LeadResponse,
     MoveStageRequest,
     MoveStageResponse,
+    NewLeadRequest,
     StageCommentResponse,
     StageEventResponse,
 )
@@ -36,6 +37,21 @@ async def create_lead(
         title=payload.title,
         notes=payload.notes,
         lead_uid=payload.lead_uid,
+    )
+    return LeadResponse.model_validate(lead)
+
+
+@router.post("/new-lead", response_model=LeadResponse, status_code=status.HTTP_201_CREATED)
+async def create_new_lead(
+    payload: NewLeadRequest,
+    use_case: CreateLeadUseCase = Depends(get_create_lead_use_case),
+) -> LeadResponse:
+    lead = await use_case.execute(
+        source_code=SourcesCode.other,
+        owner=payload.owner,
+        title=payload.title,
+        notes=payload.notes,
+        lead_uid=None,
     )
     return LeadResponse.model_validate(lead)
 
