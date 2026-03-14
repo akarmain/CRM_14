@@ -11,22 +11,15 @@
 		<Metadata name="Catalog.leads.Form.ФормаЭлемента" id="e6f0030d-e25d-420a-8a4c-6cc87053b88a" configVersion="3d1459cff66a6f4ea43543090d7884a100000000"/>
 		<Metadata name="Catalog.leads.Form.ФормаЭлемента.Form" id="e6f0030d-e25d-420a-8a4c-6cc87053b88a.0" configVersion="dbbf91a55af8db43bce20284bc8fd2c600000000"/>
 		<Metadata name="Catalog.leads.ObjectModule" id="ec2db4e8-4d92-4d6e-b577-66e9a88ef91b.0" configVersion="d846a54db5327641a4d46653997cf65300000000"/>
-		<Metadata name="Configuration.Конфигурация" id="e9fe5a59-6a72-4b59-a4bf-73220af1e4c2" configVersion="bc8d45e4fe562341be1d5d0dd7e5648d00000000"/>
-		<Metadata name="DataProcessor.json_export" id="ef3cda9c-d6cc-4f7e-955c-b1642ee24919" configVersion="142dea1d21c822458dc30cbeaf00404900000000"/>
+		<Metadata name="Configuration.Конфигурация" id="e9fe5a59-6a72-4b59-a4bf-73220af1e4c2" configVersion="41d50d898bc6044489ffa145b28b463200000000"/>
+		<Metadata name="DataProcessor.json_export" id="ef3cda9c-d6cc-4f7e-955c-b1642ee24919" configVersion="62724b10dd31494ebc660677b77b3ace00000000"/>
 		<Metadata name="DataProcessor.json_export.Form.ФормаЭкспортJson" id="2be81622-988f-493b-ac24-203048877d63" configVersion="c73e1a9df24a3b4dae45623f0567259e00000000"/>
 		<Metadata name="DataProcessor.json_export.Form.ФормаЭкспортJson.Form" id="2be81622-988f-493b-ac24-203048877d63.0" configVersion="b714497e425bd745b689c6519f3aa78600000000"/>
-		<Metadata name="DataProcessor.json_export.ObjectModule" id="ef3cda9c-d6cc-4f7e-955c-b1642ee24919.0" configVersion="8d0f454b1b1e7842a729542d3d06510500000000"/>
-		<Metadata name="DataProcessor.json_import" id="fdf2f0e2-136c-4aea-8f86-7df8c8886f6e" configVersion="da37d133763fb24985443ca12eae2ff800000000"/>
+		<Metadata name="DataProcessor.json_export.ObjectModule" id="ef3cda9c-d6cc-4f7e-955c-b1642ee24919.0" configVersion="af826c842ff4d14580543758403aad5600000000"/>
+		<Metadata name="DataProcessor.json_import" id="fdf2f0e2-136c-4aea-8f86-7df8c8886f6e" configVersion="6489a3ca78248c42b33f1fce27e8ec7300000000"/>
 		<Metadata name="DataProcessor.json_import.Form.ФормаИмпортJson" id="54327068-85a5-4db4-8cd6-5a089f9995bf" configVersion="f5d4582bf1ff9542ab79239d979901d000000000"/>
 		<Metadata name="DataProcessor.json_import.Form.ФормаИмпортJson.Form" id="54327068-85a5-4db4-8cd6-5a089f9995bf.0" configVersion="dcf8ec9b444f1945bc16887177af452000000000"/>
-		<Metadata name="DataProcessor.json_import.ObjectModule" id="fdf2f0e2-136c-4aea-8f86-7df8c8886f6e.0" configVersion="66faab3dde6c954092ce5631bced4dc200000000"/>
-		<Metadata name="Enum.current_stage" id="9c104265-a3a0-46af-8f75-d0e3287b7f5c" configVersion="3e90b5a34ce6f14ab1079ed69f318ef100000000">
-			<Metadata name="Enum.current_stage.EnumValue.lost" id="4f0c827b-fcb3-4e98-b9de-98d74cc9367a"/>
-			<Metadata name="Enum.current_stage.EnumValue.new" id="8260bd73-37b0-4864-a6e0-38d17197f4ef"/>
-			<Metadata name="Enum.current_stage.EnumValue.qualified" id="92119f07-dfae-4601-91a8-1d599e95963b"/>
-			<Metadata name="Enum.current_stage.EnumValue.proposal" id="b75ceb20-bf7a-4b47-bb58-3d73da0b9281"/>
-			<Metadata name="Enum.current_stage.EnumValue.won" id="ba2166b9-b98f-42d7-b483-5c141dac085a"/>
-		</Metadata>
+		<Metadata name="DataProcessor.json_import.ObjectModule" id="fdf2f0e2-136c-4aea-8f86-7df8c8886f6e.0" configVersion="0099c85de42fa440a1f753da84430bdc00000000"/>
 		<Metadata name="Enum.source" id="78072b8a-d87e-4664-a928-1b16db45fe18" configVersion="0da6a16776ed504282d318abf78d8d3200000000">
 			<Metadata name="Enum.source.EnumValue.advertising" id="3e010db5-df7d-483c-9a63-218ae2abdce7"/>
 			<Metadata name="Enum.source.EnumValue.website" id="4a9ac75a-3f44-487a-9337-20d28c5ad21a"/>
@@ -36,13 +29,20 @@
 		</Metadata>
 		<Metadata name="Enum.source.Form.advertising" id="46f0ad2f-69b8-4dfb-a639-8d0312285f8f" configVersion="409acfa69cf7264a804e68b7fa058dfc00000000"/>
 		<Metadata name="Enum.source.Form.advertising.Form" id="46f0ad2f-69b8-4dfb-a639-8d0312285f8f.0" configVersion="2ac7757e324e2244a57b1ab2badfc11800000000"/>
-		<Metadata name="HTTPService.Service" id="5ec83806-35ab-4622-b8a6-6ddb9ed96293" configVersion="c4a1fd3bcdd6624999b5028de71fa73f00000000">
+		<Metadata name="Enum.stage" id="9c104265-a3a0-46af-8f75-d0e3287b7f5c" configVersion="0ba634f73a8c0d449dea0d13fb601eb400000000">
+			<Metadata name="Enum.stage.EnumValue.lost" id="4f0c827b-fcb3-4e98-b9de-98d74cc9367a"/>
+			<Metadata name="Enum.stage.EnumValue.new" id="8260bd73-37b0-4864-a6e0-38d17197f4ef"/>
+			<Metadata name="Enum.stage.EnumValue.qualified" id="92119f07-dfae-4601-91a8-1d599e95963b"/>
+			<Metadata name="Enum.stage.EnumValue.proposal" id="b75ceb20-bf7a-4b47-bb58-3d73da0b9281"/>
+			<Metadata name="Enum.stage.EnumValue.won" id="ba2166b9-b98f-42d7-b483-5c141dac085a"/>
+		</Metadata>
+		<Metadata name="HTTPService.Service" id="5ec83806-35ab-4622-b8a6-6ddb9ed96293" configVersion="0f29570119c02846a4d91bcf5b74186200000000">
 			<Metadata name="HTTPService.Service.URLTemplate.methods.Method.leadPost" id="db51dc2f-c6b0-4f61-a095-3ba2512affc6"/>
 			<Metadata name="HTTPService.Service.URLTemplate.methods.Method.leadGET" id="e5a6cd7f-6b46-4164-b3f6-46d1c7ec987c"/>
 			<Metadata name="HTTPService.Service.URLTemplate.methods" id="f86f4ad9-7cbf-42cd-87aa-dcbd59d3fa84"/>
 		</Metadata>
-		<Metadata name="HTTPService.Service.Module" id="5ec83806-35ab-4622-b8a6-6ddb9ed96293.0" configVersion="785580b32e0e924bacf32b95ac345c2500000000"/>
-		<Metadata name="InformationRegister.lead_stages" id="cd820c9f-6318-46e9-b85d-5afafae4fa15" configVersion="2c6849fd9abe2b4784e556ff212ca0ef00000000">
+		<Metadata name="HTTPService.Service.Module" id="5ec83806-35ab-4622-b8a6-6ddb9ed96293.0" configVersion="e0af263146d13d40a8d08d2e8c64382b00000000"/>
+		<Metadata name="InformationRegister.lead_stages" id="cd820c9f-6318-46e9-b85d-5afafae4fa15" configVersion="1cc35b87e8173140b6df35871deeb5e700000000">
 			<Metadata name="InformationRegister.lead_stages.Dimension.lead_id" id="06a7bddb-0255-4ed7-acdf-b2e7488b2aa9"/>
 			<Metadata name="InformationRegister.lead_stages.Resource.left_at" id="2a893d58-c84d-48cf-bc26-bead284a7d72"/>
 			<Metadata name="InformationRegister.lead_stages.Dimension.created_at" id="8bb5850f-a508-410f-8618-8c0674305aed"/>

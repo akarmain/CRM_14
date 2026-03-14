@@ -2,25 +2,25 @@
 <MetaDataObject xmlns="http://v8.1c.ru/8.3/MDClasses" xmlns:app="http://v8.1c.ru/8.2/managed-application/core" xmlns:cfg="http://v8.1c.ru/8.1/data/enterprise/current-config" xmlns:cmi="http://v8.1c.ru/8.2/managed-application/cmi" xmlns:ent="http://v8.1c.ru/8.1/data/enterprise" xmlns:lf="http://v8.1c.ru/8.2/managed-application/logform" xmlns:style="http://v8.1c.ru/8.1/data/ui/style" xmlns:sys="http://v8.1c.ru/8.1/data/ui/fonts/system" xmlns:v8="http://v8.1c.ru/8.1/data/core" xmlns:v8ui="http://v8.1c.ru/8.1/data/ui" xmlns:web="http://v8.1c.ru/8.1/data/ui/colors/web" xmlns:win="http://v8.1c.ru/8.1/data/ui/colors/windows" xmlns:xen="http://v8.1c.ru/8.3/xcf/enums" xmlns:xpr="http://v8.1c.ru/8.3/xcf/predef" xmlns:xr="http://v8.1c.ru/8.3/xcf/readable" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="2.20">
 	<Enum uuid="9c104265-a3a0-46af-8f75-d0e3287b7f5c">
 		<InternalInfo>
-			<xr:GeneratedType name="EnumRef.current_stage" category="Ref">
+			<xr:GeneratedType name="EnumRef.stage" category="Ref">
 				<xr:TypeId>f8407d03-b5b7-4e62-9598-c0dd3f58eea9</xr:TypeId>
 				<xr:ValueId>fa8f3cef-854f-4d40-ac68-4c3d0d760f58</xr:ValueId>
 			</xr:GeneratedType>
-			<xr:GeneratedType name="EnumManager.current_stage" category="Manager">
+			<xr:GeneratedType name="EnumManager.stage" category="Manager">
 				<xr:TypeId>6d9ef974-14ee-44b7-9bf2-c05f60afdd50</xr:TypeId>
 				<xr:ValueId>703febae-76a7-4c55-aec5-4a676bd63f5d</xr:ValueId>
 			</xr:GeneratedType>
-			<xr:GeneratedType name="EnumList.current_stage" category="List">
+			<xr:GeneratedType name="EnumList.stage" category="List">
 				<xr:TypeId>6c61944c-6f57-44e6-ae77-8d7c92e0f0e8</xr:TypeId>
 				<xr:ValueId>6941973a-2c20-4aef-a5c5-100d0403ba59</xr:ValueId>
 			</xr:GeneratedType>
 		</InternalInfo>
 		<Properties>
-			<Name>current_stage</Name>
+			<Name>stage</Name>
 			<Synonym>
 				<v8:item>
 					<v8:lang>ru</v8:lang>
-					<v8:content>current_stage</v8:content>
+					<v8:content>stage</v8:content>
 				</v8:item>
 			</Synonym>
 			<Comment/>

@@ -10,7 +10,7 @@
 				</v8:item>
 			</Synonym>
 			<Comment/>
-			<RootURL>hui</RootURL>
+			<RootURL>http_methods</RootURL>
 			<ReuseSessions>AutoUse</ReuseSessions>
 			<SessionMaxAge>20</SessionMaxAge>
 		</Properties>
@@ -25,7 +25,7 @@
 						</v8:item>
 					</Synonym>
 					<Comment/>
-					<Template>/lead</Template>
+					<Template>/methods</Template>
 				</Properties>
 				<ChildObjects>
 					<Method uuid="e5a6cd7f-6b46-4164-b3f6-46d1c7ec987c">
