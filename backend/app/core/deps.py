@@ -2,6 +2,7 @@ from functools import lru_cache
 
 from app.application.ports import CommentRepository, LeadRepository, StageEventRepository
 from app.application.use_cases.create_lead import CreateLeadUseCase
+from app.application.use_cases.delete_lead import DeleteLeadUseCase
 from app.application.use_cases.get_lead import GetLeadUseCase
 from app.application.use_cases.list_leads import ListLeadsUseCase
 from app.application.use_cases.list_stages import ListStagesUseCase
@@ -56,6 +57,9 @@ def get_get_lead_use_case() -> GetLeadUseCase:
         get_stage_event_repository(),
         get_comment_repository(),
     )
+
+def get_delete_lead_use_case() -> DeleteLeadUseCase:
+    return DeleteLeadUseCase(get_lead_repository())
 
 
 def get_list_leads_use_case() -> ListLeadsUseCase:

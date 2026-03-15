@@ -14,6 +14,9 @@ class LeadRepository(Protocol):
     async def get_by_uid(self, lead_uid: str) -> Lead | None:
         ...
 
+    async def delete_by_uid(self, lead_uid: str) -> None:
+        ...
+
     async def list(
         self,
         owner: Users | None,

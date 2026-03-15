@@ -1,12 +1,14 @@
 from fastapi import APIRouter, Depends, Query, status
 
 from app.application.use_cases.create_lead import CreateLeadUseCase
+from app.application.use_cases.delete_lead import DeleteLeadUseCase
 from app.application.use_cases.get_lead import GetLeadUseCase
 from app.application.use_cases.list_leads import ListLeadsUseCase
 from app.application.use_cases.list_stages import ListStagesUseCase
 from app.application.use_cases.move_stage import MoveStageUseCase
 from app.core.deps import (
     get_create_lead_use_case,
+    get_delete_lead_use_case,
     get_get_lead_use_case,
     get_list_leads_use_case,
     get_list_stages_use_case,
@@ -81,6 +83,14 @@ async def get_lead(
     ]
     stage_info.sort(key=lambda item: (item.entered_at, item.stage.value))
     return LeadListResponse(**payload.model_dump(), stage_info=stage_info)
+
+
+@router.delete("/leads/{lead_uid}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_lead(
+    lead_uid: str,
+    use_case: DeleteLeadUseCase = Depends(get_delete_lead_use_case),
+) -> None:
+    await use_case.execute(lead_uid)
 
 
 @router.get("/leads", response_model=list[LeadListResponse])

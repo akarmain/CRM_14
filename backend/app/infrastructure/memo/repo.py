@@ -47,6 +47,21 @@ class MemoRepositories(LeadRepository, StageEventRepository, CommentRepository):
                 return None
             return self._leads_by_id.get(lead_id)
 
+    async def delete_by_uid(self, lead_uid: str) -> None:
+        async with self._lock:
+            lead_id = self._lead_uid_to_id.pop(lead_uid, None)
+            if lead_id is None:
+                return
+
+            self._leads_by_id.pop(lead_id, None)
+
+            stage_event_ids = self._stage_event_ids_by_lead.pop(lead_id, [])
+            for event_id in stage_event_ids:
+                self._stage_events_by_id.pop(event_id, None)
+                comment = self._comments_by_stage_event_id.pop(event_id, None)
+                if comment is not None:
+                    self._comments_by_id.pop(comment.id, None)
+
     async def list(
         self,
         owner: Users | None,

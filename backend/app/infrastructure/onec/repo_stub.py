@@ -17,6 +17,9 @@ class OneCRepositoryStub(LeadRepository, StageEventRepository, CommentRepository
     async def get_by_uid(self, lead_uid: str) -> Lead | None:
         raise NotImplementedError(self._MSG)
 
+    async def delete_by_uid(self, lead_uid: str) -> None:
+        raise NotImplementedError(self._MSG)
+
     async def list(
         self,
         owner: Users | None,

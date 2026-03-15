@@ -120,3 +120,39 @@ async def test_new_lead_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
         assert payload["owner"] == "manager_1"
         assert payload["current_stage"] == "new"
         assert payload["source_code"] == "other"
+
+
+@pytest.mark.anyio
+async def test_delete_lead_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("STORAGE_MODE", "memo")
+    get_settings.cache_clear()
+    reset_container()
+
+    app = create_app()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        create_resp = await client.post(
+            "/api/v1/leads",
+            json={
+                "source_code": "website",
+                "owner": "manager_1",
+                "title": "To be deleted",
+                "notes": "Delete me",
+            },
+        )
+        assert create_resp.status_code == 201
+        lead = create_resp.json()
+
+        delete_resp = await client.delete(f"/api/v1/leads/{lead['lead_uid']}")
+        assert delete_resp.status_code == 204
+        assert delete_resp.content in (b"", None)
+
+        get_resp = await client.get(f"/api/v1/leads/{lead['lead_uid']}")
+        assert get_resp.status_code == 404
+
+        list_resp = await client.get("/api/v1/leads")
+        assert list_resp.status_code == 200
+        assert all(item["lead_uid"] != lead["lead_uid"] for item in list_resp.json())
+
+        delete_again_resp = await client.delete(f"/api/v1/leads/{lead['lead_uid']}")
+        assert delete_again_resp.status_code == 404
