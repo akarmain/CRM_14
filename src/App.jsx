@@ -6,33 +6,71 @@ import LeadsPage from './components/LeadsPage';
 import './App.css';
 
 function App() {
-  const [role, setRole] = useState(null);
+  const [selectedRole, setSelectedRole] = useState(null);
   const [leads, setLeads] = useState([]);
 
   useEffect(() => {
-    const savedRole = Cookies.get('role');
-    const savedLeads = Cookies.get('leads');
+    const savedRole = Cookies.get('userRole');
+    if (savedRole) {
+      setSelectedRole(savedRole);
+    }
     
-    if (savedRole) setRole(savedRole);
-    if (savedLeads) setLeads(JSON.parse(savedLeads));
+    const savedLeads = Cookies.get('leadsData');
+    if (savedLeads) {
+      try {
+        setLeads(JSON.parse(savedLeads));
+      } catch (e) {
+        console.error('Ошибка загрузки данных:', e);
+      }
+    }
   }, []);
 
-
   useEffect(() => {
-    if (role) Cookies.set('role', role);
-    if (leads.length) Cookies.set('leads', JSON.stringify(leads));
-  }, [role, leads]);
+    Cookies.set('leadsData', JSON.stringify(leads), { expires: 7 });
+  }, [leads]);
+
+  const handleRoleSelect = (role) => {
+    setSelectedRole(role);
+    Cookies.set('userRole', role, { expires: 7 });
+  };
+
+  const handleLogout = () => {
+    setSelectedRole(null);
+    Cookies.remove('userRole');
+  };
+
+  const handleLeadsUpdate = (newLeads) => {
+    setLeads(newLeads);
+  };
 
   return (
     <Router>
       <Routes>
-        <Route path="/" element={
-          role ? <Navigate to="/leads" /> : <HomePage onSelectRole={setRole} />
-        } />
-        <Route path="/leads" element={
-          role ? <LeadsPage role={role} leads={leads} setLeads={setLeads} setRole={setRole} /> 
-                : <Navigate to="/" />
-        } />
+        <Route 
+          path="/" 
+          element={
+            selectedRole ? (
+              <Navigate to="/leads/table" />
+            ) : (
+              <HomePage onRoleSelect={handleRoleSelect} />
+            )
+          } 
+        />
+        <Route 
+          path="/leads/:viewMode" 
+          element={
+            selectedRole ? (
+              <LeadsPage 
+                role={selectedRole} 
+                onLogout={handleLogout}
+                leads={leads}
+                onLeadsUpdate={handleLeadsUpdate}
+              />
+            ) : (
+              <Navigate to="/" />
+            )
+          } 
+        />
       </Routes>
     </Router>
   );

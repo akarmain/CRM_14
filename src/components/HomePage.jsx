@@ -1,19 +1,23 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-function HomePage({ onSelectRole }) {
+function HomePage({ onRoleSelect }) {
   const [showDropdown, setShowDropdown] = useState(false);
   const navigate = useNavigate();
 
   const roles = [
-    'Менеджер 1',
-    'Менеджер 2', 
-    'Аналитик',
-    'Руководитель отдела продаж'
+    { id: 1, name: 'Менеджер 1', path: 'manager1' },
+    { id: 2, name: 'Менеджер 2', path: 'manager2' },
+    { id: 3, name: 'Аналитик', path: 'analyst' },
+    { id: 4, name: 'Руководитель отдела продаж', path: 'director' }
   ];
 
+  const toggleDropdown = () => {
+    setShowDropdown(!showDropdown);
+  };
+
   const handleRoleSelect = (role) => {
-    onSelectRole(role);
+    onRoleSelect(role.name);
     setShowDropdown(false);
     navigate('/leads');
   };
@@ -29,7 +33,7 @@ function HomePage({ onSelectRole }) {
         <div className="button-container">
           <button 
             className="primary-button"
-            onClick={() => setShowDropdown(!showDropdown)}
+            onClick={toggleDropdown}
           >
             Выбрать роль
           </button>
@@ -38,11 +42,11 @@ function HomePage({ onSelectRole }) {
             <div className="dropdown-menu">
               {roles.map((role) => (
                 <button
-                  key={role}
+                  key={role.id}
                   className="dropdown-item"
                   onClick={() => handleRoleSelect(role)}
                 >
-                  {role}
+                  {role.name}
                 </button>
               ))}
             </div>

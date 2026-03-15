@@ -1,55 +1,95 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import LeadsTable from './LeadsTable';
+import LeadsKanban from './LeadsKanban';
+import AddLeadModal from './AddLeadModal';
+import ImportModal from './ImportModal';
+import '../App.css';
 
-function LeadsPage({ role, leads, setLeads, setRole }) {
+function LeadsPage({ role, onLogout, leads, onLeadsUpdate }) {
   const navigate = useNavigate();
-  const [viewMode, setViewMode] = useState('table');
+  const { viewMode: urlViewMode } = useParams();
+  const [viewMode, setViewMode] = useState(urlViewMode || 'table');
+  const [showChoiceModal, setShowChoiceModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
-  const [importData, setImportData] = useState('');
-  const isManager = role.includes('Менеджер');
-  const isBoss = role === 'Аналитик' || role === 'Руководитель отдела продаж';
-  const visibleLeads = isBoss ? leads : leads.filter(l => l.manager === role);
+  const [showManualModal, setShowManualModal] = useState(false);
 
-  const handleImportSubmit = () => {
-    const lines = importData.split('\n').filter(l => l.trim());
-    const newLeads = lines.map(line => {
-      const [id, name, desc, src] = line.split(',').map(s => s.trim());
-      return {
-        id: id || '-',
-        name,
-        desc,
-        src,
-        manager: role,
-        uniqueKey: Math.random()
-      };
-    }).filter(l => l.name);
-    setLeads([...leads, ...newLeads]);
+  useEffect(() => {
+    if (urlViewMode && urlViewMode !== viewMode) {
+      setViewMode(urlViewMode);
+    }
+  }, [urlViewMode]);
+
+  const isAnalyst = role === 'Аналитик';
+  const hasAdvancedAccess = role === 'Аналитик' || role === 'Руководитель отдела продаж';
+  const isManager = role === 'Менеджер 1' || role === 'Менеджер 2';
+
+  const handleRoleSwitch = () => {
+    onLogout();
+    navigate('/');
+  };
+
+  const handleAddLead = () => {
+    setShowChoiceModal(true);
+  };
+
+  const handleManualAdd = () => {
+    setShowChoiceModal(false);
+    setShowManualModal(true);
+  };
+
+  const handleImportAdd = () => {
+    setShowChoiceModal(false);
+    setShowImportModal(true);
+  };
+
+  const handleManualSubmit = (newLead) => {
+    onLeadsUpdate([...leads, newLead]);
+    setShowManualModal(false);
+    alert('Лид успешно добавлен');
+  };
+
+  const handleImportSubmit = (importedLeads) => {
+    onLeadsUpdate([...leads, ...importedLeads]);
     setShowImportModal(false);
-    setImportData('');
-    alert(`Добавлено: ${newLeads.length}`);
+    alert(`Импортировано ${importedLeads.length} записей`);
   };
 
   const handleDeleteLead = (uniqueKey) => {
     if (window.confirm('Удалить эту запись?')) {
-      setLeads(leads.filter(l => l.uniqueKey !== uniqueKey));
+      onLeadsUpdate(leads.filter(l => l.uniqueKey !== uniqueKey));
     }
   };
 
   const handleClearAll = () => {
-    if (window.confirm('Вы уверены, что хотите удалить все свои данные?')) {
-      if (isManager) {
-        setLeads(leads.filter(l => l.manager !== role));
-      } else {
-        setLeads([]);
-      }
+    if (!window.confirm('Вы уверены, что хотите удалить все свои данные?')) return;
+    
+    if (isManager) {
+      onLeadsUpdate(leads.filter(l => l.manager !== role));
+    } else {
+      onLeadsUpdate([]);
     }
+  };
+
+  const handleStatusChange = (uniqueKey, newStatus) => {
+    if (isAnalyst) return;
+    onLeadsUpdate(leads.map(l => 
+      l.uniqueKey === uniqueKey ? { ...l, status: newStatus } : l
+    ));
+  };
+
+  const filteredLeads = hasAdvancedAccess ? leads : leads.filter(l => l.manager === role);
+
+  const handleViewModeChange = (mode) => {
+    setViewMode(mode);
+    navigate(`/leads/${mode}`);
   };
 
   return (
     <div className="leads-page">
       <div className="top-bar">
         <div className="top-bar-left">
-          {isBoss && (
+          {hasAdvancedAccess && (
             <>
               <button className="top-bar-button">Отчеты</button>
               <button className="top-bar-button">Экспорт</button>
@@ -61,18 +101,18 @@ function LeadsPage({ role, leads, setLeads, setRole }) {
           <div className="view-toggle">
             <button 
               className={`view-toggle-button ${viewMode === 'table' ? 'active' : ''}`}
-              onClick={() => setViewMode('table')}
+              onClick={() => handleViewModeChange('table')}
             >
               Таблица
             </button>
             <button 
               className={`view-toggle-button ${viewMode === 'kanban' ? 'active' : ''}`}
-              onClick={() => setViewMode('kanban')}
+              onClick={() => handleViewModeChange('kanban')}
             >
               Канбан
             </button>
           </div>
-          <button className="role-switch-button" onClick={() => { setRole(null); navigate('/'); }}>
+          <button className="role-switch-button" onClick={handleRoleSwitch}>
             Сменить роль ({role})
           </button>
         </div>
@@ -80,21 +120,21 @@ function LeadsPage({ role, leads, setLeads, setRole }) {
 
       <div className="leads-content">
         <div className="content-header">
-          <h2>Лиды {!isBoss && `(${role})`}</h2>
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <h2>Лиды {!hasAdvancedAccess && `(${role})`}</h2>
+          <div className="header-buttons">
             {isManager && (
               <>
-                <button className="import-button" onClick={() => setShowImportModal(true)}>
-                  + Импорт/Ввод данных
+                <button className="import-button" onClick={handleAddLead}>
+                  + Добавить лид
                 </button>
-                {visibleLeads.length > 0 && (
+                {filteredLeads.length > 0 && (
                   <button className="clear-button" onClick={handleClearAll}>
                     Очистить мои лиды
                   </button>
                 )}
               </>
             )}
-            {isBoss && leads.length > 0 && (
+            {hasAdvancedAccess && leads.length > 0 && (
               <button className="clear-button" onClick={handleClearAll}>
                 Очистить все лиды
               </button>
@@ -102,80 +142,65 @@ function LeadsPage({ role, leads, setLeads, setRole }) {
           </div>
         </div>
 
-        {viewMode === 'table' && (
-          <div className="table-container">
-            <table className="leads-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Название</th>
-                  <th>Описание</th>
-                  <th>Источник</th>
-                  {isBoss && <th>Менеджер</th>}
-                  <th>Действия</th>
-                </tr>
-              </thead>
-              <tbody>
-                {visibleLeads.length > 0 ? (
-                  visibleLeads.map(lead => (
-                    <tr key={lead.uniqueKey}>
-                      <td>{lead.id}</td>
-                      <td>{lead.name}</td>
-                      <td>{lead.desc}</td>
-                      <td>{lead.src}</td>
-                      {isBoss && <td>{lead.manager}</td>}
-                      <td>
-                        <button 
-                          className="delete-button"
-                          onClick={() => handleDeleteLead(lead.uniqueKey)}
-                        >
-                          Удалить
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={isBoss ? 6 : 5} className="empty-table">
-                      {isManager ? 'У вас нет лидов' : 'Нет данных для отображения'}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {viewMode === 'kanban' && (
-          <div className="kanban-placeholder">
-            <p>Канбан пуст</p>
-          </div>
+        {viewMode === 'table' ? (
+          <LeadsTable 
+            leads={filteredLeads}
+            isBoss={hasAdvancedAccess}
+            isManager={isManager}
+            onDelete={handleDeleteLead}
+          />
+        ) : (
+          <LeadsKanban 
+            leads={filteredLeads}
+            isBoss={hasAdvancedAccess}
+            isAnalyst={isAnalyst}
+            onDelete={handleDeleteLead}
+            onStatusChange={handleStatusChange}
+          />
         )}
       </div>
 
-      {showImportModal && (
-        <div className="modal-overlay" onClick={() => setShowImportModal(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <h3>Импорт данных для {role}</h3>
-            <p className="modal-hint">Введите данные в формате: ID,Название,Описание,Источник</p>
-            <p className="modal-example">Пример: 1,Иван Иванов,Клиент,Сайт</p>
-            <textarea
-              className="import-textarea"
-              value={importData}
-              onChange={(e) => setImportData(e.target.value)}
-              rows="8"
-              placeholder="Введите данные..."
-            />
-            <div className="modal-buttons">
-              <button className="modal-button cancel" onClick={() => setShowImportModal(false)}>
-                Отмена
+      {/* Модальное окно выбора способа добавления */}
+      {showChoiceModal && (
+        <div className="modal-overlay" onClick={() => setShowChoiceModal(false)}>
+          <div className="modal-content choice-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Выберите способ добавления</h3>
+            
+            <div className="choice-buttons">
+              <button className="choice-button" onClick={handleManualAdd}>
+                <span className="choice-text">Добавить вручную</span>
+                <span className="choice-description">Заполнить форму с данными лида</span>
               </button>
-              <button className="modal-button submit" onClick={handleImportSubmit}>
-                Импортировать
+              
+              <button className="choice-button" onClick={handleImportAdd}>
+                <span className="choice-text">Импорт через CSV</span>
+                <span className="choice-description">Загрузить несколько лидов сразу</span>
               </button>
             </div>
+
+            <button className="modal-button cancel" onClick={() => setShowChoiceModal(false)}>
+              Отмена
+            </button>
           </div>
         </div>
+      )}
+
+      {/* Модальное окно для ручного добавления */}
+      {showManualModal && (
+        <AddLeadModal 
+          role={role}
+          onClose={() => setShowManualModal(false)}
+          onAdd={handleManualSubmit}
+        />
+      )}
+
+      {/* Модальное окно для импорта через CSV */}
+      {showImportModal && (
+        <ImportModal 
+          role={role}
+          onClose={() => setShowImportModal(false)}
+          onImport={handleImportSubmit}
+        />
       )}
     </div>
   );
