@@ -47,7 +47,7 @@ async def create_new_lead(
     use_case: CreateLeadUseCase = Depends(get_create_lead_use_case),
 ) -> LeadResponse:
     lead = await use_case.execute(
-        source_code=SourcesCode.other,
+        source_code=payload.source_code,
         owner=payload.owner,
         title=payload.title,
         notes=payload.notes,
