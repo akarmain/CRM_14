@@ -1,9 +1,15 @@
 from dataclasses import dataclass
 from datetime import datetime
 
-from app.application.ports import LeadRepository, StageEventRepository
-from app.domain.entities import Lead
+from app.application.ports import CommentRepository, LeadRepository, StageEventRepository
+from app.domain.entities import Lead, LeadComment, LeadStageEvent
 from app.domain.enums import LeadStage, SourcesCode, Users
+
+
+@dataclass(slots=True)
+class LeadStageCommentInfo:
+    author: Users
+    comment: str | None
 
 
 @dataclass(slots=True)
@@ -11,6 +17,7 @@ class LeadStageInfo:
     entered_at: datetime
     left_at: datetime | None
     approved: bool
+    comment: list[LeadStageCommentInfo]
 
 
 @dataclass(slots=True)
@@ -20,9 +27,15 @@ class LeadWithStageInfo:
 
 
 class ListLeadsUseCase:
-    def __init__(self, lead_repository: LeadRepository, stage_repository: StageEventRepository):
+    def __init__(
+        self,
+        lead_repository: LeadRepository,
+        stage_repository: StageEventRepository,
+        comment_repository: CommentRepository,
+    ):
         self._lead_repository = lead_repository
         self._stage_repository = stage_repository
+        self._comment_repository = comment_repository
 
     async def execute(
         self,
@@ -43,12 +56,28 @@ class ListLeadsUseCase:
         result: list[LeadWithStageInfo] = []
         for lead in leads:
             events = await self._stage_repository.list_by_lead(lead.id)
-            stage_info: dict[LeadStage, LeadStageInfo] = {}
+            latest_by_stage: dict[LeadStage, LeadStageEvent] = {}
             for event in events:
-                stage_info[event.stage] = LeadStageInfo(
+                latest = latest_by_stage.get(event.stage)
+                if latest is None or (event.entered_at, event.id) > (latest.entered_at, latest.id):
+                    latest_by_stage[event.stage] = event
+
+            stage_info: dict[LeadStage, LeadStageInfo] = {}
+            for stage, event in latest_by_stage.items():
+                comment: LeadComment | None = await self._comment_repository.get_by_stage_event_id(
+                    event.id
+                )
+                comment_payload: list[LeadStageCommentInfo] = []
+                if comment is not None:
+                    comment_payload = [
+                        LeadStageCommentInfo(author=comment.author, comment=comment.comment)
+                    ]
+
+                stage_info[stage] = LeadStageInfo(
                     entered_at=event.entered_at,
                     left_at=event.left_at,
                     approved=event.approved,
+                    comment=comment_payload,
                 )
             result.append(LeadWithStageInfo(lead=lead, stage_info=stage_info))
 

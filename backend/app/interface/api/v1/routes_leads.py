@@ -18,6 +18,7 @@ from app.interface.api.schemas import (
     LeadListResponse,
     LeadResponse,
     LeadStageInfo,
+    StageInfoCommentResponse,
     MoveStageRequest,
     MoveStageResponse,
     NewLeadRequest,

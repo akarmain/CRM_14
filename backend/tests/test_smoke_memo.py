@@ -58,6 +58,10 @@ async def test_smoke_create_and_move_stage(monkeypatch: pytest.MonkeyPatch) -> N
         assert listed["stage_info"]["new"]["left_at"] is not None
         assert listed["stage_info"]["qualified"]["left_at"] is None
         assert listed["stage_info"]["qualified"]["approved"] is True
+        assert listed["stage_info"]["new"]["comment"] == []
+        assert listed["stage_info"]["qualified"]["comment"] == [
+            {"author": "manager_2", "comment": "Reached out and confirmed budget"}
+        ]
 
 
 @pytest.mark.anyio

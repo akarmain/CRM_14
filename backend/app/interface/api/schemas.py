@@ -24,6 +24,14 @@ class LeadStageInfo(BaseModel):
     entered_at: datetime
     left_at: datetime | None
     approved: bool
+    comment: list["StageInfoCommentResponse"] = Field(default_factory=list)
+
+
+class StageInfoCommentResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    author: Users
+    comment: str | None
 
 
 class LeadResponse(BaseModel):
