@@ -55,7 +55,7 @@ def get_get_lead_use_case() -> GetLeadUseCase:
 
 
 def get_list_leads_use_case() -> ListLeadsUseCase:
-    return ListLeadsUseCase(get_lead_repository())
+    return ListLeadsUseCase(get_lead_repository(), get_stage_event_repository())
 
 
 def get_move_stage_use_case() -> MoveStageUseCase:

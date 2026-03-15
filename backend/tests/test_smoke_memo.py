@@ -49,6 +49,16 @@ async def test_smoke_create_and_move_stage(monkeypatch: pytest.MonkeyPatch) -> N
         assert stages[0]["stage"] == "new"
         assert stages[1]["stage"] == "qualified"
 
+        list_resp = await client.get("/api/v1/leads")
+        assert list_resp.status_code == 200
+        items = list_resp.json()
+        listed = next(item for item in items if item["lead_uid"] == lead["lead_uid"])
+        assert "stage_info" in listed
+        assert set(listed["stage_info"].keys()) >= {"new", "qualified"}
+        assert listed["stage_info"]["new"]["left_at"] is not None
+        assert listed["stage_info"]["qualified"]["left_at"] is None
+        assert listed["stage_info"]["qualified"]["approved"] is True
+
 
 @pytest.mark.anyio
 async def test_new_lead_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:

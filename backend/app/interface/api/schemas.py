@@ -20,6 +20,12 @@ class NewLeadRequest(BaseModel):
     notes: str | None = None
 
 
+class LeadStageInfo(BaseModel):
+    entered_at: datetime
+    left_at: datetime | None
+    approved: bool
+
+
 class LeadResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -29,6 +35,10 @@ class LeadResponse(BaseModel):
     owner: Users
     title: str | None
     notes: str | None
+
+
+class LeadListResponse(LeadResponse):
+    stage_info: dict[str, LeadStageInfo]
 
 
 class MoveStageRequest(BaseModel):

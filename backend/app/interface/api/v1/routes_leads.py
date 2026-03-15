@@ -15,7 +15,9 @@ from app.core.deps import (
 from app.domain.enums import LeadStage, SourcesCode, Users
 from app.interface.api.schemas import (
     LeadCreateRequest,
+    LeadListResponse,
     LeadResponse,
+    LeadStageInfo,
     MoveStageRequest,
     MoveStageResponse,
     NewLeadRequest,
@@ -65,7 +67,7 @@ async def get_lead(
     return LeadResponse.model_validate(lead)
 
 
-@router.get("/leads", response_model=list[LeadResponse])
+@router.get("/leads", response_model=list[LeadListResponse])
 async def list_leads(
     owner: Users | None = Query(default=None),
     stage: LeadStage | None = Query(default=None),
@@ -73,7 +75,7 @@ async def list_leads(
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
     use_case: ListLeadsUseCase = Depends(get_list_leads_use_case),
-) -> list[LeadResponse]:
+) -> list[LeadListResponse]:
     leads = await use_case.execute(
         owner=owner,
         stage=stage,
@@ -81,7 +83,19 @@ async def list_leads(
         limit=limit,
         offset=offset,
     )
-    return [LeadResponse.model_validate(item) for item in leads]
+    response: list[LeadListResponse] = []
+    for item in leads:
+        payload = LeadResponse.model_validate(item.lead)
+        stage_info = {
+            stage.value: LeadStageInfo(
+                entered_at=info.entered_at,
+                left_at=info.left_at,
+                approved=info.approved,
+            )
+            for stage, info in item.stage_info.items()
+        }
+        response.append(LeadListResponse(**payload.model_dump(), stage_info=stage_info))
+    return response
 
 
 @router.post("/leads/{lead_uid}/stage", response_model=MoveStageResponse)
