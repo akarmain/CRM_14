@@ -1,29 +1,7 @@
-from dataclasses import dataclass
-from datetime import datetime
-
+from app.application.dtos import LeadStageCommentInfo, LeadStageInfo, LeadWithStageInfo
 from app.application.ports import CommentRepository, LeadRepository, StageEventRepository
-from app.domain.entities import Lead, LeadComment, LeadStageEvent
+from app.domain.entities import LeadComment
 from app.domain.enums import LeadStage, SourcesCode, Users
-
-
-@dataclass(slots=True)
-class LeadStageCommentInfo:
-    author: Users
-    comment: str | None
-
-
-@dataclass(slots=True)
-class LeadStageInfo:
-    entered_at: datetime
-    left_at: datetime | None
-    approved: bool
-    comment: list[LeadStageCommentInfo]
-
-
-@dataclass(slots=True)
-class LeadWithStageInfo:
-    lead: Lead
-    stage_info: dict[LeadStage, LeadStageInfo]
 
 
 class ListLeadsUseCase:
@@ -56,14 +34,8 @@ class ListLeadsUseCase:
         result: list[LeadWithStageInfo] = []
         for lead in leads:
             events = await self._stage_repository.list_by_lead(lead.id)
-            latest_by_stage: dict[LeadStage, LeadStageEvent] = {}
+            stage_info: list[LeadStageInfo] = []
             for event in events:
-                latest = latest_by_stage.get(event.stage)
-                if latest is None or (event.entered_at, event.id) > (latest.entered_at, latest.id):
-                    latest_by_stage[event.stage] = event
-
-            stage_info: dict[LeadStage, LeadStageInfo] = {}
-            for stage, event in latest_by_stage.items():
                 comment: LeadComment | None = await self._comment_repository.get_by_stage_event_id(
                     event.id
                 )
@@ -73,11 +45,14 @@ class ListLeadsUseCase:
                         LeadStageCommentInfo(author=comment.author, comment=comment.comment)
                     ]
 
-                stage_info[stage] = LeadStageInfo(
-                    entered_at=event.entered_at,
-                    left_at=event.left_at,
-                    approved=event.approved,
-                    comment=comment_payload,
+                stage_info.append(
+                    LeadStageInfo(
+                        stage=event.stage,
+                        entered_at=event.entered_at,
+                        left_at=event.left_at,
+                        approved=event.approved,
+                        comment=comment_payload,
+                    )
                 )
             result.append(LeadWithStageInfo(lead=lead, stage_info=stage_info))
 

@@ -42,24 +42,57 @@ async def test_smoke_create_and_move_stage(monkeypatch: pytest.MonkeyPatch) -> N
         assert moved["stage_event"]["stage"] == "qualified"
         assert moved["stage_event"]["comment"]["comment"] == "Reached out and confirmed budget"
 
+        proposal_resp = await client.post(
+            f"/api/v1/leads/{lead['lead_uid']}/stage",
+            json={
+                "stage": "proposal",
+                "author": "manager_2",
+                "comment": "Sent proposal",
+            },
+        )
+        assert proposal_resp.status_code == 200
+
+        back_to_new_resp = await client.post(
+            f"/api/v1/leads/{lead['lead_uid']}/stage",
+            json={
+                "stage": "new",
+                "author": "manager_2",
+                "comment": "Restarted qualification",
+            },
+        )
+        assert back_to_new_resp.status_code == 200
+
         stages_resp = await client.get(f"/api/v1/leads/{lead['lead_uid']}/stages")
         assert stages_resp.status_code == 200
         stages = stages_resp.json()
-        assert len(stages) == 2
-        assert stages[0]["stage"] == "new"
-        assert stages[1]["stage"] == "qualified"
+        assert len(stages) == 4
+        assert [item["stage"] for item in stages] == ["new", "qualified", "proposal", "new"]
 
         list_resp = await client.get("/api/v1/leads")
         assert list_resp.status_code == 200
         items = list_resp.json()
         listed = next(item for item in items if item["lead_uid"] == lead["lead_uid"])
         assert "stage_info" in listed
-        assert set(listed["stage_info"].keys()) >= {"new", "qualified"}
-        assert listed["stage_info"]["new"]["left_at"] is not None
-        assert listed["stage_info"]["qualified"]["left_at"] is None
-        assert listed["stage_info"]["qualified"]["approved"] is True
-        assert listed["stage_info"]["new"]["comment"] == []
-        assert listed["stage_info"]["qualified"]["comment"] == [
+        assert [item["stage"] for item in listed["stage_info"]] == ["new", "qualified", "proposal", "new"]
+        assert sum(1 for item in listed["stage_info"] if item["stage"] == "new") == 2
+        new_stages = [item for item in listed["stage_info"] if item["stage"] == "new"]
+        qualified_stage = next(item for item in listed["stage_info"] if item["stage"] == "qualified")
+        assert new_stages[0]["left_at"] is not None
+        assert new_stages[1]["left_at"] is None
+        assert qualified_stage["left_at"] is None
+        assert qualified_stage["approved"] is True
+        assert new_stages[0]["comment"] == []
+        assert qualified_stage["comment"] == [
+            {"author": "manager_2", "comment": "Reached out and confirmed budget"}
+        ]
+
+        get_resp = await client.get(f"/api/v1/leads/{lead['lead_uid']}")
+        assert get_resp.status_code == 200
+        got = get_resp.json()
+        assert got["lead_uid"] == lead["lead_uid"]
+        assert [item["stage"] for item in got["stage_info"]] == ["new", "qualified", "proposal", "new"]
+        qualified_stage = next(item for item in got["stage_info"] if item["stage"] == "qualified")
+        assert qualified_stage["comment"] == [
             {"author": "manager_2", "comment": "Reached out and confirmed budget"}
         ]
 

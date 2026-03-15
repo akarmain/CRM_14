@@ -20,7 +20,8 @@ class NewLeadRequest(BaseModel):
     notes: str | None = None
 
 
-class LeadStageInfo(BaseModel):
+class LeadStageInfoItem(BaseModel):
+    stage: LeadStage
     entered_at: datetime
     left_at: datetime | None
     approved: bool
@@ -46,7 +47,7 @@ class LeadResponse(BaseModel):
 
 
 class LeadListResponse(LeadResponse):
-    stage_info: dict[str, LeadStageInfo]
+    stage_info: list[LeadStageInfoItem]
 
 
 class MoveStageRequest(BaseModel):

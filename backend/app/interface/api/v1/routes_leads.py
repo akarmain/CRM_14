@@ -17,7 +17,7 @@ from app.interface.api.schemas import (
     LeadCreateRequest,
     LeadListResponse,
     LeadResponse,
-    LeadStageInfo,
+    LeadStageInfoItem,
     StageInfoCommentResponse,
     MoveStageRequest,
     MoveStageResponse,
@@ -59,13 +59,28 @@ async def create_new_lead(
     return LeadResponse.model_validate(lead)
 
 
-@router.get("/leads/{lead_uid}", response_model=LeadResponse)
+@router.get("/leads/{lead_uid}", response_model=LeadListResponse)
 async def get_lead(
     lead_uid: str,
     use_case: GetLeadUseCase = Depends(get_get_lead_use_case),
-) -> LeadResponse:
-    lead = await use_case.execute(lead_uid)
-    return LeadResponse.model_validate(lead)
+) -> LeadListResponse:
+    result = await use_case.execute(lead_uid)
+    payload = LeadResponse.model_validate(result.lead)
+    stage_info = [
+        LeadStageInfoItem(
+            stage=info.stage,
+            entered_at=info.entered_at,
+            left_at=info.left_at,
+            approved=info.approved,
+            comment=[
+                StageInfoCommentResponse(author=c.author, comment=c.comment)
+                for c in info.comment
+            ],
+        )
+        for info in result.stage_info
+    ]
+    stage_info.sort(key=lambda item: (item.entered_at, item.stage.value))
+    return LeadListResponse(**payload.model_dump(), stage_info=stage_info)
 
 
 @router.get("/leads", response_model=list[LeadListResponse])
@@ -87,14 +102,20 @@ async def list_leads(
     response: list[LeadListResponse] = []
     for item in leads:
         payload = LeadResponse.model_validate(item.lead)
-        stage_info = {
-            stage.value: LeadStageInfo(
+        stage_info = [
+            LeadStageInfoItem(
+                stage=info.stage,
                 entered_at=info.entered_at,
                 left_at=info.left_at,
                 approved=info.approved,
+                comment=[
+                    StageInfoCommentResponse(author=c.author, comment=c.comment)
+                    for c in info.comment
+                ],
             )
-            for stage, info in item.stage_info.items()
-        }
+            for info in item.stage_info
+        ]
+        stage_info.sort(key=lambda item: (item.entered_at, item.stage.value))
         response.append(LeadListResponse(**payload.model_dump(), stage_info=stage_info))
     return response
 
