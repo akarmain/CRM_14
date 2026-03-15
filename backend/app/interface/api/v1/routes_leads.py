@@ -1,7 +1,12 @@
+from datetime import UTC, datetime
+from typing import Literal
+
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi.responses import Response
 
 from app.application.use_cases.create_lead import CreateLeadUseCase
 from app.application.use_cases.delete_lead import DeleteLeadUseCase
+from app.application.use_cases.export_leads import ExportLeadsUseCase
 from app.application.use_cases.get_lead import GetLeadUseCase
 from app.application.use_cases.list_leads import ListLeadsUseCase
 from app.application.use_cases.list_stages import ListStagesUseCase
@@ -10,6 +15,7 @@ from app.application.use_cases.update_lead import UpdateLeadUseCase
 from app.core.deps import (
     get_create_lead_use_case,
     get_delete_lead_use_case,
+    get_export_leads_use_case,
     get_get_lead_use_case,
     get_list_leads_use_case,
     get_list_stages_use_case,
@@ -19,7 +25,6 @@ from app.core.deps import (
 from app.core.sentinels import UNSET
 from app.domain.enums import LeadStage, SourcesCode, Users
 from app.interface.api.schemas import (
-    LeadCreateRequest,
     LeadListResponse,
     LeadResponse,
     LeadStageInfoItem,
@@ -32,6 +37,7 @@ from app.interface.api.schemas import (
     StageCommentResponse,
     StageEventResponse,
 )
+from app.interface.api.v1.leads_export import render_leads_csv, render_leads_xlsx
 from app.interface.api.v1.leads_import import LeadsImportError, parse_leads_import
 
 router = APIRouter()
@@ -90,6 +96,40 @@ async def import_leads(
         lead_uids.append(created.lead_uid)
 
     return ImportLeadsResponse(created=len(lead_uids), lead_uids=lead_uids)
+
+
+@router.get("/leads/export")
+async def export_leads(
+    file_type: Literal["scv", "csv", "xlsx"] = Query(...),
+    owner: str | None = Query(default=None),
+    use_case: ExportLeadsUseCase = Depends(get_export_leads_use_case),
+) -> Response:
+    owner_parsed: Users | None = None
+    if owner is not None and owner.strip() != "":
+        try:
+            owner_parsed = Users(owner)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail="Invalid owner value.") from exc
+
+    rows = await use_case.execute(owner=owner_parsed)
+
+    fmt = "csv" if file_type in ("scv", "csv") else "xlsx"
+    if fmt == "csv":
+        content = render_leads_csv(rows)
+        media_type = "text/csv; charset=utf-8"
+        ext = "csv"
+    else:
+        content = render_leads_xlsx(rows)
+        media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        ext = "xlsx"
+
+    stamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
+    filename = f"leads_{stamp}.{ext}"
+    return Response(
+        content=content,
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.get("/leads/{lead_uid}", response_model=LeadListResponse)

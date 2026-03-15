@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from app.domain.entities import Lead
-from app.domain.enums import LeadStage, Users
+from app.domain.enums import LeadStage, SourcesCode, Users
 
 
 @dataclass(slots=True)
@@ -26,3 +26,14 @@ class LeadStageInfo:
 class LeadWithStageInfo:
     lead: Lead
     stage_info: list[LeadStageInfo]
+
+
+@dataclass(slots=True)
+class LeadExportRow:
+    lead_uid: str
+    title: str | None
+    notes: str | None
+    owner: Users
+    stage: LeadStage
+    entered_at: datetime | None
+    source_code: SourcesCode
