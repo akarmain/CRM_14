@@ -30,6 +30,15 @@ class LeadRepository(Protocol):
     async def update_stage(self, lead_id: int, new_stage: LeadStage) -> Lead:
         ...
 
+    async def update_details(
+        self,
+        lead_id: int,
+        owner: Users,
+        title: str | None,
+        notes: str | None,
+    ) -> Lead:
+        ...
+
 
 class StageEventRepository(Protocol):
     async def create_stage_event(

@@ -93,6 +93,22 @@ class MemoRepositories(LeadRepository, StageEventRepository, CommentRepository):
             self._leads_by_id[lead_id] = updated
             return updated
 
+    async def update_details(
+        self,
+        lead_id: int,
+        owner: Users,
+        title: str | None,
+        notes: str | None,
+    ) -> Lead:
+        async with self._lock:
+            lead = self._leads_by_id.get(lead_id)
+            if lead is None:
+                raise LeadNotFoundError(f"Lead with id '{lead_id}' not found.")
+
+            updated = replace(lead, owner=owner, title=title, notes=notes)
+            self._leads_by_id[lead_id] = updated
+            return updated
+
     async def create_stage_event(
         self,
         lead_id: int,

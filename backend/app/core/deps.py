@@ -7,6 +7,7 @@ from app.application.use_cases.get_lead import GetLeadUseCase
 from app.application.use_cases.list_leads import ListLeadsUseCase
 from app.application.use_cases.list_stages import ListStagesUseCase
 from app.application.use_cases.move_stage import MoveStageUseCase
+from app.application.use_cases.update_lead import UpdateLeadUseCase
 from app.core.config import get_settings
 from app.infrastructure.memo.repo import MemoRepositories
 from app.infrastructure.onec.repo_stub import OneCRepositoryStub
@@ -84,6 +85,9 @@ def get_list_stages_use_case() -> ListStagesUseCase:
         get_stage_event_repository(),
         get_comment_repository(),
     )
+
+def get_update_lead_use_case() -> UpdateLeadUseCase:
+    return UpdateLeadUseCase(get_lead_repository())
 
 
 def reset_container() -> None:

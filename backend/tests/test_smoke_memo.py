@@ -156,3 +156,55 @@ async def test_delete_lead_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
 
         delete_again_resp = await client.delete(f"/api/v1/leads/{lead['lead_uid']}")
         assert delete_again_resp.status_code == 404
+
+
+@pytest.mark.anyio
+async def test_patch_lead_updates_only_provided_fields(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("STORAGE_MODE", "memo")
+    get_settings.cache_clear()
+    reset_container()
+
+    app = create_app()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        create_resp = await client.post(
+            "/api/v1/leads",
+            json={
+                "source_code": "website",
+                "owner": "manager_1",
+                "title": "Initial title",
+                "notes": "Initial notes",
+            },
+        )
+        assert create_resp.status_code == 201
+        lead = create_resp.json()
+
+        patch_owner_resp = await client.patch(
+            f"/api/v1/leads/{lead['lead_uid']}",
+            json={"owner": "manager_2"},
+        )
+        assert patch_owner_resp.status_code == 200
+        patched = patch_owner_resp.json()
+        assert patched["owner"] == "manager_2"
+        assert patched["title"] == "Initial title"
+        assert patched["notes"] == "Initial notes"
+
+        patch_clear_title_resp = await client.patch(
+            f"/api/v1/leads/{lead['lead_uid']}",
+            json={"title": None},
+        )
+        assert patch_clear_title_resp.status_code == 200
+        patched = patch_clear_title_resp.json()
+        assert patched["owner"] == "manager_2"
+        assert patched["title"] is None
+        assert patched["notes"] == "Initial notes"
+
+        patch_notes_resp = await client.patch(
+            f"/api/v1/leads/{lead['lead_uid']}",
+            json={"notes": "Updated notes"},
+        )
+        assert patch_notes_resp.status_code == 200
+        patched = patch_notes_resp.json()
+        assert patched["owner"] == "manager_2"
+        assert patched["title"] is None
+        assert patched["notes"] == "Updated notes"

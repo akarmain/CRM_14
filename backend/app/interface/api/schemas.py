@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.domain.enums import LeadStage, SourcesCode, Users
 
@@ -18,6 +18,18 @@ class NewLeadRequest(BaseModel):
     owner: Users
     title: str | None = Field(default=None, max_length=255)
     notes: str | None = None
+
+
+class LeadUpdateRequest(BaseModel):
+    owner: Users | None = None
+    title: str | None = Field(default=None, max_length=255)
+    notes: str | None = None
+
+    @model_validator(mode="after")
+    def _validate_owner_null(self) -> "LeadUpdateRequest":
+        if "owner" in self.model_fields_set and self.owner is None:
+            raise ValueError("owner cannot be null")
+        return self
 
 
 class LeadStageInfoItem(BaseModel):

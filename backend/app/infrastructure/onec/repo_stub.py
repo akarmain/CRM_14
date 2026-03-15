@@ -33,6 +33,15 @@ class OneCRepositoryStub(LeadRepository, StageEventRepository, CommentRepository
     async def update_stage(self, lead_id: int, new_stage: LeadStage) -> Lead:
         raise NotImplementedError(self._MSG)
 
+    async def update_details(
+        self,
+        lead_id: int,
+        owner: Users,
+        title: str | None,
+        notes: str | None,
+    ) -> Lead:
+        raise NotImplementedError(self._MSG)
+
     async def create_stage_event(
         self,
         lead_id: int,

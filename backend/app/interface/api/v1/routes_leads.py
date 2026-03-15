@@ -6,6 +6,7 @@ from app.application.use_cases.get_lead import GetLeadUseCase
 from app.application.use_cases.list_leads import ListLeadsUseCase
 from app.application.use_cases.list_stages import ListStagesUseCase
 from app.application.use_cases.move_stage import MoveStageUseCase
+from app.application.use_cases.update_lead import UpdateLeadUseCase
 from app.core.deps import (
     get_create_lead_use_case,
     get_delete_lead_use_case,
@@ -13,7 +14,9 @@ from app.core.deps import (
     get_list_leads_use_case,
     get_list_stages_use_case,
     get_move_stage_use_case,
+    get_update_lead_use_case,
 )
+from app.core.sentinels import UNSET
 from app.domain.enums import LeadStage, SourcesCode, Users
 from app.interface.api.schemas import (
     LeadCreateRequest,
@@ -23,6 +26,7 @@ from app.interface.api.schemas import (
     StageInfoCommentResponse,
     MoveStageRequest,
     MoveStageResponse,
+    LeadUpdateRequest,
     NewLeadRequest,
     StageCommentResponse,
     StageEventResponse,
@@ -31,22 +35,22 @@ from app.interface.api.schemas import (
 router = APIRouter()
 
 
+# @router.post("/leads", response_model=LeadResponse, status_code=status.HTTP_201_CREATED)
+# async def create_lead(
+#     payload: LeadCreateRequest,
+#     use_case: CreateLeadUseCase = Depends(get_create_lead_use_case),
+# ) -> LeadResponse:
+#     lead = await use_case.execute(
+#         source_code=payload.source_code,
+#         owner=payload.owner,
+#         title=payload.title,
+#         notes=payload.notes,
+#         lead_uid=payload.lead_uid,
+#     )
+#     return LeadResponse.model_validate(lead)
+
+
 @router.post("/leads", response_model=LeadResponse, status_code=status.HTTP_201_CREATED)
-async def create_lead(
-    payload: LeadCreateRequest,
-    use_case: CreateLeadUseCase = Depends(get_create_lead_use_case),
-) -> LeadResponse:
-    lead = await use_case.execute(
-        source_code=payload.source_code,
-        owner=payload.owner,
-        title=payload.title,
-        notes=payload.notes,
-        lead_uid=payload.lead_uid,
-    )
-    return LeadResponse.model_validate(lead)
-
-
-@router.post("/new-lead", response_model=LeadResponse, status_code=status.HTTP_201_CREATED)
 async def create_new_lead(
     payload: NewLeadRequest,
     use_case: CreateLeadUseCase = Depends(get_create_lead_use_case),
@@ -91,6 +95,22 @@ async def delete_lead(
     use_case: DeleteLeadUseCase = Depends(get_delete_lead_use_case),
 ) -> None:
     await use_case.execute(lead_uid)
+
+
+@router.patch("/leads/{lead_uid}", response_model=LeadResponse)
+async def update_lead(
+    lead_uid: str,
+    payload: LeadUpdateRequest,
+    use_case: UpdateLeadUseCase = Depends(get_update_lead_use_case),
+) -> LeadResponse:
+    fields_set = payload.model_fields_set
+    updated = await use_case.execute(
+        lead_uid,
+        owner=payload.owner if "owner" in fields_set else UNSET,
+        title=payload.title if "title" in fields_set else UNSET,
+        notes=payload.notes if "notes" in fields_set else UNSET,
+    )
+    return LeadResponse.model_validate(updated)
 
 
 @router.get("/leads", response_model=list[LeadListResponse])
@@ -160,7 +180,7 @@ async def move_stage(
     )
 
 
-@router.get("/leads/{lead_uid}/stages", response_model=list[StageEventResponse])
+@router.get("/leads/{lead_uid}/stage", response_model=list[StageEventResponse])
 async def list_stages(
     lead_uid: str,
     use_case: ListStagesUseCase = Depends(get_list_stages_use_case),
