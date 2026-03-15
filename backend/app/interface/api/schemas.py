@@ -93,3 +93,8 @@ class MoveStageResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     mode: str
+
+
+class ImportLeadsResponse(BaseModel):
+    created: int
+    lead_uids: list[str]

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 
 from app.application.use_cases.create_lead import CreateLeadUseCase
 from app.application.use_cases.delete_lead import DeleteLeadUseCase
@@ -23,6 +23,7 @@ from app.interface.api.schemas import (
     LeadListResponse,
     LeadResponse,
     LeadStageInfoItem,
+    ImportLeadsResponse,
     StageInfoCommentResponse,
     MoveStageRequest,
     MoveStageResponse,
@@ -31,6 +32,7 @@ from app.interface.api.schemas import (
     StageCommentResponse,
     StageEventResponse,
 )
+from app.interface.api.v1.leads_import import LeadsImportError, parse_leads_import
 
 router = APIRouter()
 
@@ -63,6 +65,31 @@ async def create_new_lead(
         lead_uid=None,
     )
     return LeadResponse.model_validate(lead)
+
+
+@router.post("/leads/import", response_model=ImportLeadsResponse, status_code=status.HTTP_201_CREATED)
+async def import_leads(
+    file: UploadFile = File(...),
+    use_case: CreateLeadUseCase = Depends(get_create_lead_use_case),
+) -> ImportLeadsResponse:
+    body = await file.read()
+    try:
+        items = parse_leads_import(body, filename=file.filename, content_type=file.content_type)
+    except LeadsImportError as exc:
+        raise HTTPException(status_code=422, detail=exc.as_detail()) from exc
+
+    lead_uids: list[str] = []
+    for item in items:
+        created = await use_case.execute(
+            source_code=item.source_code,
+            owner=item.owner,
+            title=item.title,
+            notes=item.notes,
+            lead_uid=None,
+        )
+        lead_uids.append(created.lead_uid)
+
+    return ImportLeadsResponse(created=len(lead_uids), lead_uids=lead_uids)
 
 
 @router.get("/leads/{lead_uid}", response_model=LeadListResponse)
