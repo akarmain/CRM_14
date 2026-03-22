@@ -1,17 +1,13 @@
 # CRM_14
 
-Интеграционная ветка проекта, в которой объединены:
+Интеграционная ветка проекта, в которой backend из `origin/dev/rakhimovsr` объединён с React/Vite frontend из `origin/front`.
 
-- backend и монорепа из `origin/dev/rakhimovsr`
-- standalone React/Vite frontend из `origin/front`
-
-Проект представляет собой учебную MVP-версию mini-CRM для работы с лидами. В репозитории сейчас сосуществуют backend на FastAPI и frontend-части из разных веток, чтобы можно было дальше сводить backend и frontend в одном месте.
+Проект представляет собой учебную MVP-версию mini-CRM для работы с лидами. В этой сборке backend и frontend разложены по отдельным каталогам без дублирующихся frontend-реализаций.
 
 ## Структура
 
 - `backend/` — backend на `Python/FastAPI`
-- `frontend/` — frontend из ветки `origin/dev/rakhimovsr` на `Nuxt/Vue`
-- `src/`, `public/`, `package.json`, `vite.config.js` — frontend из ветки `origin/front` на `React/Vite`
+- `frontend/` — frontend на `React/Vite`
 
 ## Backend
 
@@ -26,14 +22,10 @@
 
 ## Frontend
 
-В репозитории сейчас две frontend-реализации:
-
-- `frontend/` — Nuxt/Vue приложение из backend-ориентированной ветки
-- корневой React/Vite клиент из ветки `front`
-
-Для React/Vite клиента:
+Для frontend:
 
 ```bash
+cd frontend
 npm install
 npm run dev
 ```
@@ -41,8 +33,7 @@ npm run dev
 ## Стек
 
 - Backend: `Python 3.12+`, `FastAPI`, `Uvicorn`, `Pydantic v2`
-- Frontend (`frontend/`): `Nuxt`, `Vue 3`, `TypeScript`, `Tailwind CSS`
-- Frontend (корень репозитория): `React 19`, `Vite 7`, `react-router-dom`
+- Frontend (`frontend/`): `React 19`, `Vite 7`, `react-router-dom`
 
 ## Команда проекта
 

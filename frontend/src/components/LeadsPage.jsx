@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import LeadsTable from './LeadsTable';
 import LeadsKanban from './LeadsKanban';
@@ -9,16 +9,10 @@ import '../App.css';
 function LeadsPage({ role, onLogout, leads, onLeadsUpdate }) {
   const navigate = useNavigate();
   const { viewMode: urlViewMode } = useParams();
-  const [viewMode, setViewMode] = useState(urlViewMode || 'table');
+  const viewMode = urlViewMode || 'table';
   const [showChoiceModal, setShowChoiceModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showManualModal, setShowManualModal] = useState(false);
-
-  useEffect(() => {
-    if (urlViewMode && urlViewMode !== viewMode) {
-      setViewMode(urlViewMode);
-    }
-  }, [urlViewMode]);
 
   const isAnalyst = role === 'Аналитик';
   const hasAdvancedAccess = role === 'Аналитик' || role === 'Руководитель отдела продаж';
@@ -81,7 +75,6 @@ function LeadsPage({ role, onLogout, leads, onLeadsUpdate }) {
   const filteredLeads = hasAdvancedAccess ? leads : leads.filter(l => l.manager === role);
 
   const handleViewModeChange = (mode) => {
-    setViewMode(mode);
     navigate(`/leads/${mode}`);
   };
 

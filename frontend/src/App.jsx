@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
 import HomePage from './components/HomePage';
@@ -6,24 +6,18 @@ import LeadsPage from './components/LeadsPage';
 import './App.css';
 
 function App() {
-  const [selectedRole, setSelectedRole] = useState(null);
-  const [leads, setLeads] = useState([]);
-
-  useEffect(() => {
-    const savedRole = Cookies.get('userRole');
-    if (savedRole) {
-      setSelectedRole(savedRole);
-    }
-    
+  const [selectedRole, setSelectedRole] = useState(() => Cookies.get('userRole') ?? null);
+  const [leads, setLeads] = useState(() => {
     const savedLeads = Cookies.get('leadsData');
-    if (savedLeads) {
-      try {
-        setLeads(JSON.parse(savedLeads));
-      } catch (e) {
-        console.error('Ошибка загрузки данных:', e);
-      }
+    if (!savedLeads) return [];
+
+    try {
+      return JSON.parse(savedLeads);
+    } catch (e) {
+      console.error('Ошибка загрузки данных:', e);
+      return [];
     }
-  }, []);
+  });
 
   useEffect(() => {
     Cookies.set('leadsData', JSON.stringify(leads), { expires: 7 });
