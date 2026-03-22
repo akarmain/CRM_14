@@ -73,6 +73,21 @@ async def create_new_lead(
     return LeadResponse.model_validate(lead)
 
 
+@router.post("/new-lead", response_model=LeadResponse, status_code=status.HTTP_200_OK)
+async def create_legacy_new_lead(
+    payload: NewLeadRequest,
+    use_case: CreateLeadUseCase = Depends(get_create_lead_use_case),
+) -> LeadResponse:
+    lead = await use_case.execute(
+        source_code=payload.source_code,
+        owner=payload.owner,
+        title=payload.title,
+        notes=payload.notes,
+        lead_uid=None,
+    )
+    return LeadResponse.model_validate(lead)
+
+
 @router.post("/leads/import", response_model=ImportLeadsResponse, status_code=status.HTTP_201_CREATED)
 async def import_leads(
     file: UploadFile = File(...),
@@ -248,6 +263,7 @@ async def move_stage(
 
 
 @router.get("/leads/{lead_uid}/stage", response_model=list[StageEventResponse])
+@router.get("/leads/{lead_uid}/stages", response_model=list[StageEventResponse])
 async def list_stages(
     lead_uid: str,
     use_case: ListStagesUseCase = Depends(get_list_stages_use_case),

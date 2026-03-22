@@ -19,7 +19,7 @@ function HomePage({ onRoleSelect }) {
   const handleRoleSelect = (role) => {
     onRoleSelect(role.name);
     setShowDropdown(false);
-    navigate('/leads');
+    navigate('/leads/table');
   };
 
   return (

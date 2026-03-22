@@ -14,7 +14,7 @@ class LeadCreateRequest(BaseModel):
 
 
 class NewLeadRequest(BaseModel):
-    source_code: SourcesCode
+    source_code: SourcesCode = SourcesCode.other
     owner: Users
     title: str | None = Field(default=None, max_length=255)
     notes: str | None = None

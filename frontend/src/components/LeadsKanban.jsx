@@ -1,6 +1,6 @@
 import React from 'react';
 
-const STATUSES = ['Новый', 'В работе', 'Потерянный', 'Завершенный'];
+const STATUSES = ['Новый', 'Квалификация', 'Предложение', 'Успешно', 'Потерян'];
 
 function LeadsKanban({ leads, isBoss, isAnalyst, onDelete, onStatusChange }) {
   const leadsByStatus = {};

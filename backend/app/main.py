@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
 from app.core.errors import register_exception_handlers
@@ -12,6 +13,18 @@ def create_app() -> FastAPI:
     setup_logging(settings.log_level)
 
     application = FastAPI(title="mini_crm_simple", version="0.1.0")
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+        ],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     register_exception_handlers(application)
 
     application.include_router(health_router, prefix="/api/v1", tags=["health"])

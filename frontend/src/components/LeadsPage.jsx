@@ -6,13 +6,25 @@ import AddLeadModal from './AddLeadModal';
 import ImportModal from './ImportModal';
 import '../App.css';
 
-function LeadsPage({ role, onLogout, leads, onLeadsUpdate }) {
+function LeadsPage({
+  role,
+  onLogout,
+  leads,
+  isLoading,
+  error,
+  onLeadCreate,
+  onLeadsImport,
+  onLeadDelete,
+  onLeadsClear,
+  onLeadStatusChange,
+}) {
   const navigate = useNavigate();
   const { viewMode: urlViewMode } = useParams();
   const viewMode = urlViewMode || 'table';
   const [showChoiceModal, setShowChoiceModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showManualModal, setShowManualModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isAnalyst = role === 'Аналитик';
   const hasAdvancedAccess = role === 'Аналитик' || role === 'Руководитель отдела продаж';
@@ -37,39 +49,75 @@ function LeadsPage({ role, onLogout, leads, onLeadsUpdate }) {
     setShowImportModal(true);
   };
 
-  const handleManualSubmit = (newLead) => {
-    onLeadsUpdate([...leads, newLead]);
-    setShowManualModal(false);
-    alert('Лид успешно добавлен');
+  const handleManualSubmit = async (newLead) => {
+    setIsSubmitting(true);
+    try {
+      await onLeadCreate(newLead);
+      setShowManualModal(false);
+      alert('Лид успешно добавлен');
+    } catch (submitError) {
+      alert(submitError.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleImportSubmit = (importedLeads) => {
-    onLeadsUpdate([...leads, ...importedLeads]);
-    setShowImportModal(false);
-    alert(`Импортировано ${importedLeads.length} записей`);
+  const handleImportSubmit = async (importedLeads) => {
+    setIsSubmitting(true);
+    try {
+      const createdLeads = await onLeadsImport(importedLeads);
+      setShowImportModal(false);
+      alert(`Импортировано ${createdLeads.length} записей`);
+    } catch (submitError) {
+      alert(submitError.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleDeleteLead = (uniqueKey) => {
+  const handleDeleteLead = async (leadUid) => {
     if (window.confirm('Удалить эту запись?')) {
-      onLeadsUpdate(leads.filter(l => l.uniqueKey !== uniqueKey));
+      setIsSubmitting(true);
+      try {
+        await onLeadDelete(leadUid);
+      } catch (submitError) {
+        alert(submitError.message);
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
-  const handleClearAll = () => {
+  const handleClearAll = async () => {
     if (!window.confirm('Вы уверены, что хотите удалить все свои данные?')) return;
-    
-    if (isManager) {
-      onLeadsUpdate(leads.filter(l => l.manager !== role));
-    } else {
-      onLeadsUpdate([]);
+
+    const leadsToDelete = isManager ? filteredLeads : leads;
+
+    if (leadsToDelete.length === 0) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await onLeadsClear(leadsToDelete);
+    } catch (submitError) {
+      alert(submitError.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleStatusChange = (uniqueKey, newStatus) => {
+  const handleStatusChange = async (leadUid, newStatus) => {
     if (isAnalyst) return;
-    onLeadsUpdate(leads.map(l => 
-      l.uniqueKey === uniqueKey ? { ...l, status: newStatus } : l
-    ));
+
+    setIsSubmitting(true);
+    try {
+      await onLeadStatusChange(leadUid, newStatus);
+    } catch (submitError) {
+      alert(submitError.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const filteredLeads = hasAdvancedAccess ? leads : leads.filter(l => l.manager === role);
@@ -135,22 +183,31 @@ function LeadsPage({ role, onLogout, leads, onLeadsUpdate }) {
           </div>
         </div>
 
-        {viewMode === 'table' ? (
-          <LeadsTable 
-            leads={filteredLeads}
-            isBoss={hasAdvancedAccess}
-            isManager={isManager}
-            onDelete={handleDeleteLead}
-          />
+        {error && <p className="empty-table">{error}</p>}
+
+        {isLoading ? (
+          <p className="empty-table">Загрузка лидов из FastAPI...</p>
         ) : (
-          <LeadsKanban 
-            leads={filteredLeads}
-            isBoss={hasAdvancedAccess}
-            isAnalyst={isAnalyst}
-            onDelete={handleDeleteLead}
-            onStatusChange={handleStatusChange}
-          />
+          <>
+            {viewMode === 'table' ? (
+              <LeadsTable 
+                leads={filteredLeads}
+                isBoss={hasAdvancedAccess}
+                isManager={isManager}
+                onDelete={handleDeleteLead}
+              />
+            ) : (
+              <LeadsKanban 
+                leads={filteredLeads}
+                isBoss={hasAdvancedAccess}
+                isAnalyst={isAnalyst}
+                onDelete={handleDeleteLead}
+                onStatusChange={handleStatusChange}
+              />
+            )}
+          </>
         )}
+
       </div>
 
       {/* Модальное окно выбора способа добавления */}
@@ -182,6 +239,7 @@ function LeadsPage({ role, onLogout, leads, onLeadsUpdate }) {
       {showManualModal && (
         <AddLeadModal 
           role={role}
+          isSubmitting={isSubmitting}
           onClose={() => setShowManualModal(false)}
           onAdd={handleManualSubmit}
         />
@@ -191,6 +249,7 @@ function LeadsPage({ role, onLogout, leads, onLeadsUpdate }) {
       {showImportModal && (
         <ImportModal 
           role={role}
+          isSubmitting={isSubmitting}
           onClose={() => setShowImportModal(false)}
           onImport={handleImportSubmit}
         />

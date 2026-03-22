@@ -1,62 +1,44 @@
 import React, { useState } from 'react';
 
-function AddLeadModal({ role, onClose, onAdd }) {
+const SOURCES = ['Сайт', 'Реклама', 'Рекомендация', 'Событие', 'Другое'];
+
+function AddLeadModal({ onClose, onAdd, isSubmitting }) {
   const [lead, setLead] = useState({
-    id: '',
-    name: '',
+    title: '',
     description: '',
     source: ''
   });
 
-  const generateUniqueId = () => {
-    return Date.now() + Math.random().toString(36).substr(2, 9);
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!lead.id.trim() || !lead.name.trim() || !lead.description.trim() || !lead.source.trim()) {
+    if (!lead.title.trim() || !lead.description.trim() || !lead.source.trim()) {
       alert('Пожалуйста, заполните все поля');
       return;
     }
 
-    onAdd({
-      customId: lead.id,
-      name: lead.name,
+    await onAdd({
+      title: lead.title,
       description: lead.description,
       source: lead.source,
-      manager: role,
-      status: 'Новый',
-      uniqueKey: generateUniqueId()
     });
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={isSubmitting ? undefined : onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <h3>Добавить нового лида</h3>
         
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="id">ID:</label>
-            <input
-              type="text"
-              id="id"
-              className="form-input"
-              value={lead.id}
-              onChange={(e) => setLead({...lead, id: e.target.value})}
-              placeholder="Введите ID"
-            />
-          </div>
-
           <div className="form-group">
             <label htmlFor="name">Название:</label>
             <input
               type="text"
               id="name"
               className="form-input"
-              value={lead.name}
-              onChange={(e) => setLead({...lead, name: e.target.value})}
+              value={lead.title}
+              onChange={(e) => setLead({...lead, title: e.target.value})}
               placeholder="Введите название"
+              disabled={isSubmitting}
             />
           </div>
 
@@ -69,6 +51,7 @@ function AddLeadModal({ role, onClose, onAdd }) {
               onChange={(e) => setLead({...lead, description: e.target.value})}
               placeholder="Введите описание"
               rows="3"
+              disabled={isSubmitting}
             />
           </div>
 
@@ -79,23 +62,23 @@ function AddLeadModal({ role, onClose, onAdd }) {
               className="form-select"
               value={lead.source}
               onChange={(e) => setLead({...lead, source: e.target.value})}
+              disabled={isSubmitting}
             >
               <option value="">Выберите источник</option>
-              <option value="Сайт">Сайт</option>
-              <option value="Телефон">Телефон</option>
-              <option value="Почта">Почта</option>
-              <option value="Мессенджер">Мессенджер</option>
-              <option value="Соцсети">Соцсети</option>
-              <option value="Рекомендация">Рекомендация</option>
+              {SOURCES.map((source) => (
+                <option key={source} value={source}>
+                  {source}
+                </option>
+              ))}
             </select>
           </div>
 
           <div className="modal-buttons">
-            <button type="button" className="modal-button cancel" onClick={onClose}>
+            <button type="button" className="modal-button cancel" onClick={onClose} disabled={isSubmitting}>
               Отмена
             </button>
-            <button type="submit" className="modal-button submit">
-              Добавить
+            <button type="submit" className="modal-button submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Сохранение...' : 'Добавить'}
             </button>
           </div>
         </form>

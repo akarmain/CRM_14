@@ -1,4 +1,5 @@
 import pytest
+import re
 from httpx import ASGITransport, AsyncClient
 
 from app.core.config import get_settings
@@ -79,7 +80,7 @@ async def test_smoke_create_and_move_stage(monkeypatch: pytest.MonkeyPatch) -> N
         qualified_stage = next(item for item in listed["stage_info"] if item["stage"] == "qualified")
         assert new_stages[0]["left_at"] is not None
         assert new_stages[1]["left_at"] is None
-        assert qualified_stage["left_at"] is None
+        assert qualified_stage["left_at"] is not None
         assert qualified_stage["approved"] is True
         assert new_stages[0]["comment"] == []
         assert qualified_stage["comment"] == [
@@ -120,6 +121,36 @@ async def test_new_lead_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
         assert payload["owner"] == "manager_1"
         assert payload["current_stage"] == "new"
         assert payload["source_code"] == "other"
+
+
+@pytest.mark.anyio
+async def test_generated_lead_uid_has_short_alphanumeric_format(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("STORAGE_MODE", "memo")
+    get_settings.cache_clear()
+    reset_container()
+
+    app = create_app()
+    generated_uids: set[str] = set()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        for index in range(12):
+            response = await client.post(
+                "/api/v1/leads",
+                json={
+                    "source_code": "website",
+                    "owner": "manager_1",
+                    "title": f"Lead {index}",
+                    "notes": "Format check",
+                },
+            )
+
+            assert response.status_code == 201
+            lead_uid = response.json()["lead_uid"]
+            assert re.fullmatch(r"[A-Za-z0-9]{5}", lead_uid)
+            assert lead_uid not in generated_uids
+            generated_uids.add(lead_uid)
 
 
 @pytest.mark.anyio
