@@ -1,58 +1,55 @@
 # CRM_14
-Этот проект представляет собой учебную MVP-версию мини-CRM системы для работы с лидами. Реализована карточка лида, отслеживание стадий (new → qualified → proposal → won / lost), отчёт «Воронка продаж» и расчёт ключевых метрик.
 
-Цель проекта — повысить прозрачность воронки продаж и предоставить инструмент для анализа конверсии по этапам и средней длительности стадий. Все расчёты выполняются на синтетических данных без использования персональной информации.
+Интеграционная ветка проекта, в которой объединены:
 
-В рамках MVP реализованы: импорт данных из CSV (с идемпотентной повторной загрузкой), базовые валидации, отчёт с фильтрами (по периоду, источнику и менеджеру), а также UI-прототип канбан-доски и мок REST API `/leads`.
+- backend и монорепа из `origin/dev/rakhimovsr`
+- standalone React/Vite frontend из `origin/front`
 
-Проект разработан в учебных целях без боевых интеграций и прод-развёртывания. Архитектура включает 1С-артефакты (справочник, отчёт, регистры), обработку данных и прототип пользовательского интерфейса.
+Проект представляет собой учебную MVP-версию mini-CRM для работы с лидами. В репозитории сейчас сосуществуют backend на FastAPI и frontend-части из разных веток, чтобы можно было дальше сводить backend и frontend в одном месте.
 
-## Команда проекта
+## Структура
 
-| ФИО           | Роль                    |
-| ------------- | ----------------------- |
-| Кармаев Андрей Александрович ИНБО-30-25   | Аналитик / Project Lead |
-| Кучин Иван Вадимович ЭПБО-01-25  | 1С-разработчик          |
-| Рахимов Шамиль Рашитович ЭФБО-02-25  | Full-stack (UI)         |
-| Маркина Майя Витальевна ЭФБО-02-25 | Full-stack (API)        |
-| Полухина Елизавета Константиновна ЭФБО-02-25 | Full-stack (Data / KPI) |
+- `backend/` — backend на `Python/FastAPI`
+- `frontend/` — frontend из ветки `origin/dev/rakhimovsr` на `Nuxt/Vue`
+- `src/`, `public/`, `package.json`, `vite.config.js` — frontend из ветки `origin/front` на `React/Vite`
 
-## Локальный запуск Backend
+## Backend
 
-Подробная инструкция вынесена в отдельный файл:
-- `backend/README.md`
+Краткий запуск:
 
-Коротко:
 1. Перейти в `backend`
 2. Выполнить `uv sync`
 3. Запустить `make run`
 4. Проверить `http://localhost:8000/docs`
 
-## Публикация на GitHub
+Подробности: `backend/README.md`
 
-Минимальный порядок действий:
-1. Создать новый пустой репозиторий на GitHub (без README и .gitignore).
-2. В корне проекта выполнить:
+## Frontend
+
+В репозитории сейчас две frontend-реализации:
+
+- `frontend/` — Nuxt/Vue приложение из backend-ориентированной ветки
+- корневой React/Vite клиент из ветки `front`
+
+Для React/Vite клиента:
 
 ```bash
-git init
-git add .
-git commit -m "Initial commit"
-git branch -M main
-git remote add origin https://github.com/<username>/<repo>.git
-git push -u origin main
+npm install
+npm run dev
 ```
 
-Перед публикацией проверь:
-- В репозиторий не попали `.env`, `.venv`, `node_modules` и локальные IDE-файлы.
-- В репозитории есть только `*.example` для переменных окружения.
-- Проект запускается по инструкции из `backend/README.md`.
+## Стек
 
-## Стек технологий
+- Backend: `Python 3.12+`, `FastAPI`, `Uvicorn`, `Pydantic v2`
+- Frontend (`frontend/`): `Nuxt`, `Vue 3`, `TypeScript`, `Tailwind CSS`
+- Frontend (корень репозитория): `React 19`, `Vite 7`, `react-router-dom`
 
-- Backend: `Python 3.12+`, `FastAPI`, `Uvicorn`, `Pydantic v2`, `pydantic-settings`.
-- Архитектура backend: `Clean Architecture` (Domain/Application/Infrastructure/Interface), dependency inversion через порты.
-- Хранилище в MVP: in-memory адаптер `memo` + заглушка адаптера под `1C`.
-- Frontend: `Nuxt 3/4`, `Vue 3`, `TypeScript`, `Tailwind CSS`, `shadcn-nuxt`.
-- Инструменты качества: `pytest`, `ruff`, `mypy`, `eslint`, `prettier`.
-- Контейнеризация: `Docker`, `docker-compose` (опционально для локальной разработки).
+## Команда проекта
+
+| ФИО | Роль |
+| --- | --- |
+| Кармаев Андрей Александрович ИНБО-30-25 | Аналитик / Project Lead |
+| Кучин Иван Вадимович ЭПБО-01-25 | 1С-разработчик |
+| Рахимов Шамиль Рашитович ЭФБО-02-25 | Full-stack (UI) |
+| Маркина Майя Витальевна ЭФБО-02-25 | Full-stack (API) |
+| Полухина Елизавета Константиновна ЭФБО-02-25 | Full-stack (Data / KPI) |
