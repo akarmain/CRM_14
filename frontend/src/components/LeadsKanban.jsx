@@ -1,10 +1,16 @@
 import React from 'react';
 
-const STATUSES = ['Новый', 'Квалификация', 'Предложение', 'Успешно', 'Потерян'];
+const COLUMNS = [
+  { title: 'new', status: 'Новый' },
+  { title: 'qualified', status: 'Квалификация' },
+  { title: 'proposal', status: 'Предложение' },
+  { title: 'won', status: 'Успешно' },
+  { title: 'lost', status: 'Потерян' },
+];
 
 function LeadsKanban({ leads, isBoss, isAnalyst, onDelete, onStatusChange }) {
   const leadsByStatus = {};
-  STATUSES.forEach(status => {
+  COLUMNS.forEach(({ status }) => {
     leadsByStatus[status] = leads.filter(l => l.status === status);
   });
 
@@ -29,35 +35,44 @@ function LeadsKanban({ leads, isBoss, isAnalyst, onDelete, onStatusChange }) {
 
   return (
     <div className="kanban-container">
-      {STATUSES.map(status => (
+      {COLUMNS.map(({ title, status }) => (
         <div
           key={status}
           className="kanban-column"
           onDragOver={handleDragOver}
           onDrop={(e) => handleDrop(e, status)}
         >
-          <h3>{status}</h3>
-          {leadsByStatus[status].map(lead => (
-            <div
-              key={lead.uniqueKey}
-              className={`kanban-card ${isAnalyst ? 'readonly' : ''}`}
-              draggable={!isAnalyst}
-              onDragStart={(e) => handleDragStart(e, lead.uniqueKey)}
-            >
-              <div className="kanban-card-header">
-                <span className="kanban-card-id">ID: {lead.customId}</span>
-                {isBoss && <span className="kanban-card-manager">{lead.manager}</span>}
-              </div>
-              <h4>{lead.name}</h4>
-              <p>{lead.description}</p>
-              <div className="kanban-card-footer">
-                <span className="kanban-card-source">{lead.source}</span>
-                <button className="delete-button-small" onClick={() => onDelete(lead.uniqueKey)}>
-                  ✕
-                </button>
-              </div>
-            </div>
-          ))}
+          <div className="kanban-column-header">
+            <h3>{title}</h3>
+            <span className="kanban-column-count">{leadsByStatus[status].length}</span>
+          </div>
+          <div className="kanban-column-body">
+            {leadsByStatus[status].length > 0 ? (
+              leadsByStatus[status].map(lead => (
+                <div
+                  key={lead.uniqueKey}
+                  className={`kanban-card ${isAnalyst ? 'readonly' : ''}`}
+                  draggable={!isAnalyst}
+                  onDragStart={(e) => handleDragStart(e, lead.uniqueKey)}
+                >
+                  <div className="kanban-card-header">
+                    <span className="kanban-card-id">#{lead.customId}</span>
+                    {isBoss && <span className="kanban-card-manager">{lead.manager}</span>}
+                  </div>
+                  <h4>{lead.name}</h4>
+                  <p>{lead.description}</p>
+                  <div className="kanban-card-footer">
+                    <span className="kanban-card-source">{lead.source}</span>
+                    <button className="delete-button-small" onClick={() => onDelete(lead.uniqueKey)}>
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="kanban-empty-state">Перетащи лид сюда</div>
+            )}
+          </div>
         </div>
       ))}
     </div>

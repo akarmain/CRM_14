@@ -130,6 +130,7 @@ function LeadsPage({
     <div className="leads-page">
       <div className="top-bar">
         <div className="top-bar-left">
+          <div className="board-brand">CRM.14</div>
           {hasAdvancedAccess && (
             <>
               <button className="top-bar-button">Отчеты</button>
