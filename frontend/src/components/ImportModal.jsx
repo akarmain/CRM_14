@@ -1,57 +1,54 @@
 import React, { useState } from 'react';
 
-function ImportModal({ onClose, onImport, isSubmitting }) {
-  const [importData, setImportData] = useState('');
+function ImportModal({ isSubmitting = false, onClose, onSubmit }) {
+  const [file, setFile] = useState(null);
+  const [error, setError] = useState('');
 
-  const handleImport = async () => {
-    if (!importData.trim()) {
-      alert('Введите данные для импорта');
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!file) {
+      setError('Выберите CSV или XLSX файл.');
       return;
     }
 
-    const lines = importData.trim().split('\n');
-    
-    const newLeads = lines.map(line => {
-      const parts = line.split(',').map(item => item.trim());
-      const [title, description, source] = parts.length >= 4 ? parts.slice(1, 4) : parts;
-
-      return {
-        title: title || '',
-        description: description || '',
-        source: source || '',
-      };
-    }).filter(lead => lead.title && lead.source);
-
-    if (newLeads.length > 0) {
-      await onImport(newLeads);
-    } else {
-      alert('Нет корректных данных для импорта');
-    }
+    setError('');
+    await onSubmit(file);
   };
 
   return (
     <div className="modal-overlay" onClick={isSubmitting ? undefined : onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <h3>Импорт данных через CSV</h3>
-        <p className="modal-hint">Введите данные в формате: Название,Описание,Источник</p>
-        <p className="modal-example">Или в старом формате: ID,Название,Описание,Источник</p>
-        <p className="modal-example">Пример: Компания А,Клиент из Москвы,Сайт</p>
-        <textarea
-          className="import-textarea"
-          value={importData}
-          onChange={(e) => setImportData(e.target.value)}
-          rows="8"
-          placeholder="Введите данные..."
-          disabled={isSubmitting}
-        />
-        <div className="modal-buttons">
-          <button className="modal-button cancel" onClick={onClose} disabled={isSubmitting}>
-            Отмена
-          </button>
-          <button className="modal-button submit" onClick={handleImport} disabled={isSubmitting}>
-            {isSubmitting ? 'Импорт...' : 'Импортировать'}
+      <div className="modal-card" onClick={(event) => event.stopPropagation()}>
+        <div className="modal-header">
+          <h3>Импорт лидов</h3>
+          <button type="button" className="ghost-button" onClick={onClose} disabled={isSubmitting}>
+            Закрыть
           </button>
         </div>
+        <form className="modal-form" onSubmit={handleSubmit}>
+          <p className="muted-copy">
+            Поддерживаются файлы <code>.csv</code> и <code>.xlsx</code>. Для менеджера
+            владелец будет назначен автоматически, для РОП поле <code>owner</code> в файле
+            сохраняется.
+          </p>
+          <label className="upload-card">
+            <span>{file ? file.name : 'Выбрать файл'}</span>
+            <input
+              type="file"
+              accept=".csv,.xlsx"
+              disabled={isSubmitting}
+              onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+            />
+          </label>
+          {error && <p className="error-banner">{error}</p>}
+          <div className="modal-actions">
+            <button type="button" className="secondary-button" onClick={onClose} disabled={isSubmitting}>
+              Отмена
+            </button>
+            <button type="submit" className="primary-button" disabled={isSubmitting}>
+              {isSubmitting ? 'Импортируем...' : 'Импортировать'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

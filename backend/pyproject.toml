@@ -5,11 +5,16 @@ description = "Clean architecture FastAPI mini CRM with pluggable storage adapte
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+  "alembic>=1.16.5",
+  "asyncpg>=0.30.0",
   "fastapi>=0.115.0,<1.0.0",
+  "greenlet>=3.2.4",
+  "itsdangerous>=2.2.0",
   "pydantic>=2.8.0,<3.0.0",
   "pydantic-settings>=2.4.0,<3.0.0",
   "python-multipart>=0.0.9,<1.0.0",
   "requests>=2.32.5",
+  "sqlalchemy>=2.0.43",
   "uvicorn[standard]>=0.30.0,<1.0.0",
 ]
 

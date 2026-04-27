@@ -5,8 +5,13 @@ class Users(StrEnum):
     manager_1 = "manager_1"
     manager_2 = "manager_2"
     sales_head = "sales_head"
-    analyst = "analyst"
 
+
+class AppRole(StrEnum):
+    manager_1 = "manager_1"
+    manager_2 = "manager_2"
+    sales_head = "sales_head"
+    analyst = "analyst"
 
 
 class LeadStage(StrEnum):
@@ -23,3 +28,9 @@ class SourcesCode(StrEnum):
     recommendation = "recommendation"
     event = "event"
     other = "other"
+
+
+class ReturnRequestStatus(StrEnum):
+    pending = "pending"
+    approved = "approved"
+    rejected = "rejected"

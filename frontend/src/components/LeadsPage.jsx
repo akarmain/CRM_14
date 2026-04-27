@@ -1,258 +1,328 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import LeadsTable from './LeadsTable';
-import LeadsKanban from './LeadsKanban';
-import AddLeadModal from './AddLeadModal';
+import { useSession } from '../auth/SessionProvider';
+import {
+  createLead,
+  deleteLead,
+  exportLeads,
+  fetchLeadDetail,
+  fetchLeads,
+  getRoleLabel,
+  importLeads,
+  moveLeadStage,
+  OWNER_OPTIONS,
+  requestReturnToPreviousStage,
+  SOURCE_OPTIONS,
+  updateLead,
+} from '../lib/leadsApi';
+import { downloadBlob } from '../lib/ui';
 import ImportModal from './ImportModal';
-import '../App.css';
+import LeadFormModal from './LeadFormModal';
+import LeadHistoryModal from './LeadHistoryModal';
+import LeadsKanban from './LeadsKanban';
+import LeadsTable from './LeadsTable';
 
-function LeadsPage({
-  role,
-  onLogout,
-  leads,
-  isLoading,
-  error,
-  onLeadCreate,
-  onLeadsImport,
-  onLeadDelete,
-  onLeadsClear,
-  onLeadStatusChange,
-}) {
+function LeadsPage() {
   const navigate = useNavigate();
-  const { viewMode: urlViewMode } = useParams();
-  const viewMode = urlViewMode || 'table';
-  const [showChoiceModal, setShowChoiceModal] = useState(false);
-  const [showImportModal, setShowImportModal] = useState(false);
-  const [showManualModal, setShowManualModal] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { viewMode = 'table' } = useParams();
+  const { session, logout } = useSession();
+  const [leads, setLeads] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isMutating, setIsMutating] = useState(false);
+  const [error, setError] = useState('');
+  const [filters, setFilters] = useState({
+    owner: '',
+    source_code: '',
+    date_from: '',
+    date_to: '',
+  });
+  const [leadFormState, setLeadFormState] = useState({ open: false, mode: 'create', lead: null });
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [historyState, setHistoryState] = useState({ open: false, lead: null, isLoading: false });
 
-  const isAnalyst = role === 'Аналитик';
-  const hasAdvancedAccess = role === 'Аналитик' || role === 'Руководитель отдела продаж';
-  const isManager = role === 'Менеджер 1' || role === 'Менеджер 2';
+  const permissions = session.permissions;
+  const isSalesHead = session.role === 'sales_head';
+  const isManager = session.role === 'manager_1' || session.role === 'manager_2';
 
-  const handleRoleSwitch = () => {
-    onLogout();
-    navigate('/');
-  };
+  const activeView = viewMode === 'kanban' ? 'kanban' : 'table';
 
-  const handleAddLead = () => {
-    setShowChoiceModal(true);
-  };
-
-  const handleManualAdd = () => {
-    setShowChoiceModal(false);
-    setShowManualModal(true);
-  };
-
-  const handleImportAdd = () => {
-    setShowChoiceModal(false);
-    setShowImportModal(true);
-  };
-
-  const handleManualSubmit = async (newLead) => {
-    setIsSubmitting(true);
+  const loadLeads = async () => {
+    setIsLoading(true);
+    setError('');
     try {
-      await onLeadCreate(newLead);
-      setShowManualModal(false);
-      alert('Лид успешно добавлен');
-    } catch (submitError) {
-      alert(submitError.message);
+      const nextLeads = await fetchLeads(
+        permissions.can_read_all_leads ? filters : {}
+      );
+      setLeads(nextLeads);
+    } catch (requestError) {
+      setError(requestError.message);
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
-  const handleImportSubmit = async (importedLeads) => {
-    setIsSubmitting(true);
+  useEffect(() => {
+    void loadLeads();
+  }, [session.role, filters.owner, filters.source_code, filters.date_from, filters.date_to]);
+
+  const refreshHistory = async (leadUid) => {
+    setHistoryState({ open: true, lead: null, isLoading: true });
     try {
-      const createdLeads = await onLeadsImport(importedLeads);
-      setShowImportModal(false);
-      alert(`Импортировано ${createdLeads.length} записей`);
-    } catch (submitError) {
-      alert(submitError.message);
-    } finally {
-      setIsSubmitting(false);
+      const detail = await fetchLeadDetail(leadUid);
+      setHistoryState({ open: true, lead: detail, isLoading: false });
+    } catch (requestError) {
+      setHistoryState({ open: false, lead: null, isLoading: false });
+      setError(requestError.message);
     }
   };
 
-  const handleDeleteLead = async (leadUid) => {
-    if (window.confirm('Удалить эту запись?')) {
-      setIsSubmitting(true);
-      try {
-        await onLeadDelete(leadUid);
-      } catch (submitError) {
-        alert(submitError.message);
-      } finally {
-        setIsSubmitting(false);
+  const runMutation = async (handler) => {
+    setIsMutating(true);
+    setError('');
+    try {
+      await handler();
+      await loadLeads();
+      if (historyState.open && historyState.lead?.lead_uid) {
+        await refreshHistory(historyState.lead.lead_uid);
       }
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setIsMutating(false);
     }
   };
 
-  const handleClearAll = async () => {
-    if (!window.confirm('Вы уверены, что хотите удалить все свои данные?')) return;
+  const handleLeadSubmit = async (payload) => {
+    await runMutation(async () => {
+      if (leadFormState.mode === 'edit' && leadFormState.lead) {
+        await updateLead(leadFormState.lead.lead_uid, payload);
+      } else {
+        await createLead(payload);
+      }
+      setLeadFormState({ open: false, mode: 'create', lead: null });
+    });
+  };
 
-    const leadsToDelete = isManager ? filteredLeads : leads;
+  const handleImportSubmit = async (file) => {
+    await runMutation(async () => {
+      await importLeads(file);
+      setIsImportOpen(false);
+    });
+  };
 
-    if (leadsToDelete.length === 0) {
+  const handleMoveStage = async (lead, targetStage) => {
+    if (lead.current_stage === targetStage) {
       return;
     }
+    const rawComment = window.prompt('Комментарий к смене стадии (необязательно):', '') ?? '';
+    await runMutation(async () => {
+      await moveLeadStage(lead.lead_uid, targetStage, rawComment.trim() || null);
+    });
+  };
 
-    setIsSubmitting(true);
+  const handleRequestReturn = async (lead) => {
+    const comment = window.prompt('Почему нужно вернуть лид на предыдущую стадию?');
+    if (!comment || !comment.trim()) {
+      return;
+    }
+    await runMutation(async () => {
+      await requestReturnToPreviousStage(lead.lead_uid, comment.trim());
+    });
+  };
+
+  const handleDelete = async (lead) => {
+    if (!window.confirm(`Удалить лид ${lead.lead_uid}?`)) {
+      return;
+    }
+    await runMutation(async () => {
+      await deleteLead(lead.lead_uid);
+    });
+  };
+
+  const handleExport = async (format) => {
     try {
-      await onLeadsClear(leadsToDelete);
-    } catch (submitError) {
-      alert(submitError.message);
-    } finally {
-      setIsSubmitting(false);
+      const { blob, filename } = await exportLeads(format, permissions.can_read_all_leads ? { owner: filters.owner } : {});
+      downloadBlob(blob, filename);
+    } catch (requestError) {
+      setError(requestError.message);
     }
   };
 
-  const handleStatusChange = async (leadUid, newStatus) => {
-    if (isAnalyst) return;
-
-    setIsSubmitting(true);
-    try {
-      await onLeadStatusChange(leadUid, newStatus);
-    } catch (submitError) {
-      alert(submitError.message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const filteredLeads = hasAdvancedAccess ? leads : leads.filter(l => l.manager === role);
-
-  const handleViewModeChange = (mode) => {
-    navigate(`/leads/${mode}`);
-  };
+  const filterControls = useMemo(() => (
+    <div className="filters-bar">
+      <label className="field compact-field">
+        <span>Владелец</span>
+        <select
+          value={filters.owner}
+          onChange={(event) => setFilters((current) => ({ ...current, owner: event.target.value }))}
+        >
+          <option value="">Все</option>
+          {OWNER_OPTIONS.map((owner) => (
+            <option key={owner.value} value={owner.value}>
+              {owner.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="field compact-field">
+        <span>Источник</span>
+        <select
+          value={filters.source_code}
+          onChange={(event) =>
+            setFilters((current) => ({ ...current, source_code: event.target.value }))
+          }
+        >
+          <option value="">Все</option>
+          {SOURCE_OPTIONS.map((source) => (
+            <option key={source.value} value={source.value}>
+              {source.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="field compact-field">
+        <span>С даты</span>
+        <input
+          type="date"
+          value={filters.date_from}
+          onChange={(event) => setFilters((current) => ({ ...current, date_from: event.target.value }))}
+        />
+      </label>
+      <label className="field compact-field">
+        <span>По дату</span>
+        <input
+          type="date"
+          value={filters.date_to}
+          onChange={(event) => setFilters((current) => ({ ...current, date_to: event.target.value }))}
+        />
+      </label>
+    </div>
+  ), [filters]);
 
   return (
     <div className="leads-page">
       <div className="top-bar">
         <div className="top-bar-left">
-          <div className="board-brand">CRM.14</div>
-          {hasAdvancedAccess && (
+          {permissions.can_view_reports && (
+            <button className="top-bar-button" onClick={() => navigate('/reports')}>
+              Отчёты
+            </button>
+          )}
+          {permissions.can_export_leads && (
             <>
-              <button className="top-bar-button">Отчеты</button>
-              <button className="top-bar-button">Экспорт</button>
-              <button className="top-bar-button">Запросы</button>
+              <button className="top-bar-button" onClick={() => handleExport('csv')}>
+                Экспорт CSV
+              </button>
+              <button className="top-bar-button" onClick={() => handleExport('xlsx')}>
+                Экспорт Excel
+              </button>
             </>
+          )}
+          {permissions.can_review_returns && (
+            <button className="top-bar-button" onClick={() => navigate('/requests')}>
+              Запросы
+            </button>
           )}
         </div>
         <div className="top-bar-right">
           <div className="view-toggle">
-            <button 
-              className={`view-toggle-button ${viewMode === 'table' ? 'active' : ''}`}
-              onClick={() => handleViewModeChange('table')}
+            <button
+              className={`view-toggle-button ${activeView === 'table' ? 'active' : ''}`}
+              onClick={() => navigate('/leads/table')}
             >
               Таблица
             </button>
-            <button 
-              className={`view-toggle-button ${viewMode === 'kanban' ? 'active' : ''}`}
-              onClick={() => handleViewModeChange('kanban')}
+            <button
+              className={`view-toggle-button ${activeView === 'kanban' ? 'active' : ''}`}
+              onClick={() => navigate('/leads/kanban')}
             >
               Канбан
             </button>
           </div>
-          <button className="role-switch-button" onClick={handleRoleSwitch}>
-            Сменить роль ({role})
+          <button className="role-switch-button" onClick={logout}>
+            Сменить роль ({getRoleLabel(session.role)})
           </button>
         </div>
       </div>
 
       <div className="leads-content">
         <div className="content-header">
-          <h2>Лиды {!hasAdvancedAccess && `(${role})`}</h2>
+          <div>
+            <h2>Лиды {!permissions.can_read_all_leads && `(${getRoleLabel(session.role)})`}</h2>
+            <p className="page-subtitle">
+              Backend сам ограничивает доступ к данным и действиям.
+            </p>
+          </div>
           <div className="header-buttons">
-            {isManager && (
-              <>
-                <button className="import-button" onClick={handleAddLead}>
-                  + Добавить лид
-                </button>
-                {filteredLeads.length > 0 && (
-                  <button className="clear-button" onClick={handleClearAll}>
-                    Очистить мои лиды
-                  </button>
-                )}
-              </>
+            {permissions.can_create_leads && (
+              <button
+                className="primary-button"
+                onClick={() => setLeadFormState({ open: true, mode: 'create', lead: null })}
+              >
+                + Добавить лид
+              </button>
             )}
-            {hasAdvancedAccess && leads.length > 0 && (
-              <button className="clear-button" onClick={handleClearAll}>
-                Очистить все лиды
+            {permissions.can_import_leads && (
+              <button className="import-button" onClick={() => setIsImportOpen(true)}>
+                Импорт CSV/XLSX
               </button>
             )}
           </div>
         </div>
 
-        {error && <p className="empty-table">{error}</p>}
+        {permissions.can_read_all_leads && filterControls}
+        {error && <p className="error-banner">{error}</p>}
 
         {isLoading ? (
-          <p className="empty-table">Загрузка лидов из FastAPI...</p>
+          <div className="panel-card empty-panel">
+            <p className="muted-copy">Загрузка лидов...</p>
+          </div>
+        ) : activeView === 'kanban' ? (
+          <LeadsKanban
+            leads={leads}
+            session={session}
+            onMoveStage={handleMoveStage}
+            onOpenHistory={(leadUid) => void refreshHistory(leadUid)}
+            onRequestReturn={handleRequestReturn}
+            onDelete={handleDelete}
+          />
         ) : (
-          <>
-            {viewMode === 'table' ? (
-              <LeadsTable 
-                leads={filteredLeads}
-                isBoss={hasAdvancedAccess}
-                isManager={isManager}
-                onDelete={handleDeleteLead}
-              />
-            ) : (
-              <LeadsKanban 
-                leads={filteredLeads}
-                isBoss={hasAdvancedAccess}
-                isAnalyst={isAnalyst}
-                onDelete={handleDeleteLead}
-                onStatusChange={handleStatusChange}
-              />
-            )}
-          </>
+          <LeadsTable
+            leads={leads}
+            session={session}
+            onMoveStage={handleMoveStage}
+            onOpenHistory={(leadUid) => void refreshHistory(leadUid)}
+            onRequestReturn={handleRequestReturn}
+            onEdit={(lead) => setLeadFormState({ open: true, mode: 'edit', lead })}
+            onDelete={handleDelete}
+          />
         )}
-
       </div>
 
-      {/* Модальное окно выбора способа добавления */}
-      {showChoiceModal && (
-        <div className="modal-overlay" onClick={() => setShowChoiceModal(false)}>
-          <div className="modal-content choice-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Выберите способ добавления</h3>
-            
-            <div className="choice-buttons">
-              <button className="choice-button" onClick={handleManualAdd}>
-                <span className="choice-text">Добавить вручную</span>
-                <span className="choice-description">Заполнить форму с данными лида</span>
-              </button>
-              
-              <button className="choice-button" onClick={handleImportAdd}>
-                <span className="choice-text">Импорт через CSV</span>
-                <span className="choice-description">Загрузить несколько лидов сразу</span>
-              </button>
-            </div>
-
-            <button className="modal-button cancel" onClick={() => setShowChoiceModal(false)}>
-              Отмена
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Модальное окно для ручного добавления */}
-      {showManualModal && (
-        <AddLeadModal 
-          role={role}
-          isSubmitting={isSubmitting}
-          onClose={() => setShowManualModal(false)}
-          onAdd={handleManualSubmit}
+      {leadFormState.open && (
+        <LeadFormModal
+          mode={leadFormState.mode}
+          initialLead={leadFormState.lead}
+          canManageOwner={isSalesHead}
+          isSubmitting={isMutating}
+          onClose={() => setLeadFormState({ open: false, mode: 'create', lead: null })}
+          onSubmit={handleLeadSubmit}
         />
       )}
 
-      {/* Модальное окно для импорта через CSV */}
-      {showImportModal && (
-        <ImportModal 
-          role={role}
-          isSubmitting={isSubmitting}
-          onClose={() => setShowImportModal(false)}
-          onImport={handleImportSubmit}
+      {isImportOpen && (
+        <ImportModal
+          isSubmitting={isMutating}
+          onClose={() => setIsImportOpen(false)}
+          onSubmit={handleImportSubmit}
+        />
+      )}
+
+      {historyState.open && (
+        <LeadHistoryModal
+          lead={historyState.lead}
+          isLoading={historyState.isLoading}
+          onClose={() => setHistoryState({ open: false, lead: null, isLoading: false })}
         />
       )}
     </div>

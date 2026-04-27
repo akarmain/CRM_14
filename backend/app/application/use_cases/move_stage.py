@@ -32,12 +32,15 @@ class MoveStageUseCase:
         stage: LeadStage,
         author: Users,
         comment: str | None,
+        *,
+        allow_any_transition: bool = False,
     ) -> MoveStageResult:
         lead = await self._lead_repository.get_by_uid(lead_uid)
         if lead is None:
             raise LeadNotFoundError(f"Lead with uid '{lead_uid}' not found.")
 
-        ensure_transition_allowed(lead.current_stage, stage)
+        if not allow_any_transition:
+            ensure_transition_allowed(lead.current_stage, stage)
 
         now = datetime.now(UTC)
         closed_event = await self._stage_repository.close_open_event(lead.id, left_at=now)

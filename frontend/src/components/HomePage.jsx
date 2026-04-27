@@ -1,25 +1,27 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSession } from '../auth/SessionProvider';
+import { ROLE_OPTIONS } from '../lib/leadsApi';
 
-function HomePage({ onRoleSelect }) {
-  const [showDropdown, setShowDropdown] = useState(false);
+function HomePage() {
   const navigate = useNavigate();
+  const { selectRole } = useSession();
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
-  const roles = [
-    { id: 1, name: 'Менеджер 1', path: 'manager1' },
-    { id: 2, name: 'Менеджер 2', path: 'manager2' },
-    { id: 3, name: 'Аналитик', path: 'analyst' },
-    { id: 4, name: 'Руководитель отдела продаж', path: 'director' }
-  ];
-
-  const toggleDropdown = () => {
-    setShowDropdown(!showDropdown);
-  };
-
-  const handleRoleSelect = (role) => {
-    onRoleSelect(role.name);
+  const handleRoleSelect = async (role) => {
+    setIsSubmitting(true);
+    setError('');
     setShowDropdown(false);
-    navigate('/leads/table');
+    try {
+      await selectRole(role);
+      navigate('/leads/table');
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -31,22 +33,25 @@ function HomePage({ onRoleSelect }) {
 
       <main className="main">
         <div className="button-container">
-          <button 
+          {error && <p className="error-banner">{error}</p>}
+          <button
             className="primary-button"
-            onClick={toggleDropdown}
+            onClick={() => setShowDropdown((current) => !current)}
+            disabled={isSubmitting}
           >
-            Выбрать роль
+            {isSubmitting ? 'Подключаем роль...' : 'Выбрать роль'}
           </button>
 
           {showDropdown && (
             <div className="dropdown-menu">
-              {roles.map((role) => (
+              {ROLE_OPTIONS.map((role) => (
                 <button
-                  key={role.id}
+                  key={role.value}
                   className="dropdown-item"
-                  onClick={() => handleRoleSelect(role)}
+                  onClick={() => handleRoleSelect(role.value)}
+                  disabled={isSubmitting}
                 >
-                  {role.name}
+                  {role.label}
                 </button>
               ))}
             </div>

@@ -23,6 +23,14 @@ class InvalidTransitionError(AppError):
     status_code = 400
 
 
+class UnauthorizedError(AppError):
+    status_code = 401
+
+
+class ForbiddenError(AppError):
+    status_code = 403
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppError)
     async def app_error_handler(_: Request, exc: AppError) -> JSONResponse:
@@ -31,3 +39,7 @@ def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(NotImplementedError)
     async def not_implemented_handler(_: Request, exc: NotImplementedError) -> JSONResponse:
         return JSONResponse(status_code=501, content={"detail": str(exc)})
+
+    @app.exception_handler(Exception)
+    async def unhandled_error_handler(_: Request, exc: Exception) -> JSONResponse:
+        return JSONResponse(status_code=500, content={"detail": str(exc) or exc.__class__.__name__})

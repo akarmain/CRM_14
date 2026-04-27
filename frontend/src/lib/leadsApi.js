@@ -1,145 +1,226 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000/api/v1';
 
-const UI_TO_API_ROLE = {
-  'Менеджер 1': 'manager_1',
-  'Менеджер 2': 'manager_2',
-  'Руководитель отдела продаж': 'sales_head',
-  'Аналитик': 'analyst',
-};
+export const ROLE_OPTIONS = [
+  { value: 'manager_1', label: 'Менеджер 1' },
+  { value: 'manager_2', label: 'Менеджер 2' },
+  { value: 'analyst', label: 'Аналитик' },
+  { value: 'sales_head', label: 'Руководитель отдела продаж' },
+];
 
-const API_TO_UI_ROLE = {
-  manager_1: 'Менеджер 1',
-  manager_2: 'Менеджер 2',
-  sales_head: 'Руководитель отдела продаж',
-  analyst: 'Аналитик',
-};
+export const OWNER_OPTIONS = [
+  { value: 'manager_1', label: 'Менеджер 1' },
+  { value: 'manager_2', label: 'Менеджер 2' },
+  { value: 'sales_head', label: 'Руководитель отдела продаж' },
+];
 
-const UI_TO_API_SOURCE = {
-  Сайт: 'website',
-  Реклама: 'advertisement',
-  Рекомендация: 'recommendation',
-  Событие: 'event',
-  Другое: 'other',
-};
+export const SOURCE_OPTIONS = [
+  { value: 'website', label: 'Сайт' },
+  { value: 'advertisement', label: 'Реклама' },
+  { value: 'recommendation', label: 'Рекомендация' },
+  { value: 'event', label: 'Событие' },
+  { value: 'other', label: 'Другое' },
+];
 
-const API_TO_UI_SOURCE = {
-  website: 'Сайт',
-  advertisement: 'Реклама',
-  recommendation: 'Рекомендация',
-  event: 'Событие',
-  other: 'Другое',
-};
+export const STAGE_OPTIONS = [
+  { value: 'new', label: 'Новый' },
+  { value: 'qualified', label: 'Квалификация' },
+  { value: 'proposal', label: 'Предложение' },
+  { value: 'won', label: 'Успешно' },
+  { value: 'lost', label: 'Потерян' },
+];
 
-const UI_TO_API_STAGE = {
-  Новый: 'new',
-  Квалификация: 'qualified',
-  Предложение: 'proposal',
-  Успешно: 'won',
-  Потерян: 'lost',
-};
+export class ApiError extends Error {
+  constructor(message, status, detail = null) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.detail = detail;
+  }
+}
 
-const API_TO_UI_STAGE = {
-  new: 'Новый',
-  qualified: 'Квалификация',
-  proposal: 'Предложение',
-  won: 'Успешно',
-  lost: 'Потерян',
-};
-
-async function request(path, init = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init.headers ?? {}),
-    },
-    ...init,
+function buildQuery(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '') {
+      return;
+    }
+    query.set(key, value);
   });
+  const asString = query.toString();
+  return asString ? `?${asString}` : '';
+}
+
+async function parseError(response) {
+  const text = await response.text();
+  if (!text) {
+    throw new ApiError('Запрос завершился ошибкой.', response.status);
+  }
+
+  let payload = null;
+  try {
+    payload = JSON.parse(text);
+  } catch {
+    throw new ApiError(text, response.status);
+  }
+
+  const detail = payload?.detail ?? payload;
+  if (typeof detail === 'string') {
+    throw new ApiError(detail, response.status, payload);
+  }
+  if (detail?.message) {
+    throw new ApiError(detail.message, response.status, payload);
+  }
+  throw new ApiError('Запрос завершился ошибкой.', response.status, payload);
+}
+
+async function request(path, options = {}) {
+  const { responseType = 'json', ...init } = options;
+  const headers = new Headers(init.headers ?? {});
+  const nextInit = { ...init, headers, credentials: 'include' };
+
+  if (init.body && !(init.body instanceof FormData) && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  if (headers.get('Content-Type') === 'application/json' && typeof init.body !== 'string') {
+    nextInit.body = JSON.stringify(init.body);
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, nextInit);
+
+  if (!response.ok) {
+    await parseError(response);
+  }
 
   if (response.status === 204) {
     return null;
   }
 
-  const text = await response.text();
-  const payload = text ? JSON.parse(text) : null;
-
-  if (!response.ok) {
-    const detail = payload?.detail;
-    const message =
-      typeof detail === 'string'
-        ? detail
-        : detail?.message ?? 'Не удалось выполнить запрос к FastAPI.';
-    throw new Error(message);
+  if (responseType === 'blob') {
+    return response;
   }
 
-  return payload;
-}
-
-function mapLeadFromApi(lead) {
-  return {
-    uniqueKey: lead.lead_uid,
-    leadUid: lead.lead_uid,
-    customId: lead.lead_uid,
-    name: lead.title ?? 'Без названия',
-    description: lead.notes ?? '',
-    source: API_TO_UI_SOURCE[lead.source_code] ?? lead.source_code,
-    sourceCode: lead.source_code,
-    manager: API_TO_UI_ROLE[lead.owner] ?? lead.owner,
-    owner: lead.owner,
-    status: API_TO_UI_STAGE[lead.current_stage] ?? lead.current_stage,
-    stage: lead.current_stage,
-  };
-}
-
-function mapCreateLeadPayload(lead, role) {
-  return {
-    owner: UI_TO_API_ROLE[role],
-    title: lead.title.trim(),
-    notes: lead.description.trim(),
-    source_code: UI_TO_API_SOURCE[lead.source] ?? 'other',
-  };
-}
-
-export async function fetchLeads() {
-  const leads = await request('/leads');
-  return leads.map(mapLeadFromApi);
-}
-
-export async function createLead(lead, role) {
-  const created = await request('/leads', {
-    method: 'POST',
-    body: JSON.stringify(mapCreateLeadPayload(lead, role)),
-  });
-
-  return mapLeadFromApi(created);
-}
-
-export async function createLeadsBatch(leads, role) {
-  const created = [];
-
-  for (const lead of leads) {
-    created.push(await createLead(lead, role));
+  if (responseType === 'text') {
+    return response.text();
   }
 
-  return created;
+  return response.json();
 }
 
-export async function removeLead(leadUid) {
-  await request(`/leads/${leadUid}`, { method: 'DELETE' });
+export function getRoleLabel(role) {
+  return ROLE_OPTIONS.find((option) => option.value === role)?.label ?? role;
 }
 
-export async function moveLeadStage(leadUid, status, role) {
-  const moved = await request(`/leads/${leadUid}/stage`, {
+export function getStageLabel(stage) {
+  return STAGE_OPTIONS.find((option) => option.value === stage)?.label ?? stage;
+}
+
+export function getSourceLabel(sourceCode) {
+  return SOURCE_OPTIONS.find((option) => option.value === sourceCode)?.label ?? sourceCode;
+}
+
+export function getLeadDisplayName(lead) {
+  return lead.title?.trim() || 'Без названия';
+}
+
+export function getForwardTargets(stage) {
+  if (stage === 'new') return ['qualified'];
+  if (stage === 'qualified') return ['proposal'];
+  if (stage === 'proposal') return ['won', 'lost'];
+  return [];
+}
+
+export async function fetchSession() {
+  try {
+    return await request('/session/me');
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+export function selectRole(role) {
+  return request('/session/role', { method: 'POST', body: { role } });
+}
+
+export function clearSession() {
+  return request('/session/role', { method: 'DELETE' });
+}
+
+export function fetchLeads(filters = {}) {
+  return request(`/leads${buildQuery(filters)}`);
+}
+
+export function fetchLeadDetail(leadUid) {
+  return request(`/leads/${leadUid}`);
+}
+
+export function createLead(payload) {
+  return request('/leads', { method: 'POST', body: payload });
+}
+
+export function updateLead(leadUid, payload) {
+  return request(`/leads/${leadUid}`, { method: 'PATCH', body: payload });
+}
+
+export function deleteLead(leadUid) {
+  return request(`/leads/${leadUid}`, { method: 'DELETE' });
+}
+
+export function moveLeadStage(leadUid, stage, comment = null) {
+  return request(`/leads/${leadUid}/stage`, {
     method: 'POST',
-    body: JSON.stringify({
-      stage: UI_TO_API_STAGE[status],
-      author: UI_TO_API_ROLE[role],
-      comment: null,
-    }),
+    body: { stage, comment },
   });
-
-  return mapLeadFromApi(moved.lead);
 }
 
-export function getLeadIds(leads) {
-  return leads.map((lead) => lead.leadUid);
+export function requestReturnToPreviousStage(leadUid, comment) {
+  return request(`/leads/${leadUid}/return-requests`, {
+    method: 'POST',
+    body: { comment },
+  });
+}
+
+export function fetchReturnRequests(filters = {}) {
+  return request(`/return-requests${buildQuery(filters)}`);
+}
+
+export function approveReturnRequest(requestId, reviewComment) {
+  return request(`/return-requests/${requestId}/approve`, {
+    method: 'POST',
+    body: { review_comment: reviewComment },
+  });
+}
+
+export function rejectReturnRequest(requestId, reviewComment) {
+  return request(`/return-requests/${requestId}/reject`, {
+    method: 'POST',
+    body: { review_comment: reviewComment },
+  });
+}
+
+export function fetchReportsSummary(filters = {}) {
+  return request(`/reports/summary${buildQuery(filters)}`);
+}
+
+export function fetchAuditLog(filters = {}) {
+  return request(`/audit-log${buildQuery(filters)}`);
+}
+
+export function importLeads(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  return request('/leads/import', { method: 'POST', body: formData });
+}
+
+export async function exportLeads(fileType, filters = {}) {
+  const query = buildQuery({ file_type: fileType, ...filters });
+  const response = await request(`/leads/export${query}`, { responseType: 'blob' });
+  const disposition = response.headers.get('content-disposition') ?? '';
+  const filenameMatch = disposition.match(/filename="([^"]+)"/);
+  const filename = filenameMatch?.[1] ?? `leads.${fileType}`;
+  const blob = await response.blob();
+  return { blob, filename };
 }

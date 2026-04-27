@@ -5,13 +5,25 @@ import builtins
 from dataclasses import replace
 from datetime import datetime
 
-from app.application.ports import CommentRepository, LeadRepository, StageEventRepository
+from app.application.ports import (
+    AuditLogRepository,
+    CommentRepository,
+    LeadRepository,
+    ReturnRequestRepository,
+    StageEventRepository,
+)
 from app.core.errors import ConflictError, LeadNotFoundError
-from app.domain.entities import Lead, LeadComment, LeadStageEvent
-from app.domain.enums import LeadStage, SourcesCode, Users
+from app.domain.entities import AuditLogEntry, Lead, LeadComment, LeadStageEvent, StageReturnRequest
+from app.domain.enums import LeadStage, ReturnRequestStatus, SourcesCode, Users
 
 
-class MemoRepositories(LeadRepository, StageEventRepository, CommentRepository):
+class MemoRepositories(
+    LeadRepository,
+    StageEventRepository,
+    CommentRepository,
+    ReturnRequestRepository,
+    AuditLogRepository,
+):
     def __init__(self) -> None:
         self._lock = asyncio.Lock()
 
@@ -23,10 +35,15 @@ class MemoRepositories(LeadRepository, StageEventRepository, CommentRepository):
 
         self._comments_by_id: dict[int, LeadComment] = {}
         self._comments_by_stage_event_id: dict[int, LeadComment] = {}
+        self._return_requests_by_id: dict[int, StageReturnRequest] = {}
+        self._return_request_ids_by_lead: dict[int, list[int]] = {}
+        self._audit_entries_by_id: dict[int, AuditLogEntry] = {}
 
         self._lead_id_seq = 0
         self._stage_event_id_seq = 0
         self._comment_id_seq = 0
+        self._return_request_id_seq = 0
+        self._audit_entry_id_seq = 0
 
     async def create(self, lead: Lead) -> Lead:
         async with self._lock:
@@ -47,6 +64,10 @@ class MemoRepositories(LeadRepository, StageEventRepository, CommentRepository):
                 return None
             return self._leads_by_id.get(lead_id)
 
+    async def get_by_id(self, lead_id: int) -> Lead | None:
+        async with self._lock:
+            return self._leads_by_id.get(lead_id)
+
     async def delete_by_uid(self, lead_uid: str) -> None:
         async with self._lock:
             lead_id = self._lead_uid_to_id.pop(lead_uid, None)
@@ -61,6 +82,10 @@ class MemoRepositories(LeadRepository, StageEventRepository, CommentRepository):
                 comment = self._comments_by_stage_event_id.pop(event_id, None)
                 if comment is not None:
                     self._comments_by_id.pop(comment.id, None)
+
+            request_ids = self._return_request_ids_by_lead.pop(lead_id, [])
+            for request_id in request_ids:
+                self._return_requests_by_id.pop(request_id, None)
 
     async def list(
         self,
@@ -194,3 +219,82 @@ class MemoRepositories(LeadRepository, StageEventRepository, CommentRepository):
     async def get_by_stage_event_id(self, stage_event_id: int) -> LeadComment | None:
         async with self._lock:
             return self._comments_by_stage_event_id.get(stage_event_id)
+
+    async def create_return_request(self, request: StageReturnRequest) -> StageReturnRequest:
+        async with self._lock:
+            self._return_request_id_seq += 1
+            created = replace(request, id=self._return_request_id_seq)
+            self._return_requests_by_id[created.id] = created
+            self._return_request_ids_by_lead.setdefault(created.lead_id, []).append(created.id)
+            return created
+
+    async def get_return_request_by_id(self, request_id: int) -> StageReturnRequest | None:
+        async with self._lock:
+            return self._return_requests_by_id.get(request_id)
+
+    async def list_return_requests(
+        self,
+        *,
+        status: ReturnRequestStatus | None,
+        lead_id: int | None,
+    ) -> list[StageReturnRequest]:
+        async with self._lock:
+            items = list(self._return_requests_by_id.values())
+            if status is not None:
+                items = [item for item in items if item.status == status]
+            if lead_id is not None:
+                items = [item for item in items if item.lead_id == lead_id]
+            items.sort(key=lambda item: (item.requested_at, item.id), reverse=True)
+            return items
+
+    async def list_return_requests_by_lead(self, lead_id: int) -> list[StageReturnRequest]:
+        async with self._lock:
+            request_ids = self._return_request_ids_by_lead.get(lead_id, [])
+            items = [self._return_requests_by_id[request_id] for request_id in request_ids]
+            items.sort(key=lambda item: (item.requested_at, item.id), reverse=True)
+            return items
+
+    async def update_review(
+        self,
+        request_id: int,
+        *,
+        status: ReturnRequestStatus,
+        reviewed_by: Users,
+        review_comment: str,
+        reviewed_at: datetime,
+    ) -> StageReturnRequest:
+        async with self._lock:
+            request = self._return_requests_by_id.get(request_id)
+            if request is None:
+                raise LeadNotFoundError(f"Return request '{request_id}' not found.")
+
+            updated = replace(
+                request,
+                status=status,
+                reviewed_by=reviewed_by,
+                review_comment=review_comment,
+                reviewed_at=reviewed_at,
+            )
+            self._return_requests_by_id[request_id] = updated
+            return updated
+
+    async def create_audit_entry(self, entry: AuditLogEntry) -> AuditLogEntry:
+        async with self._lock:
+            self._audit_entry_id_seq += 1
+            created = replace(entry, id=self._audit_entry_id_seq)
+            self._audit_entries_by_id[created.id] = created
+            return created
+
+    async def list_audit_entries(
+        self,
+        *,
+        lead_id: int | None,
+        limit: int,
+        offset: int,
+    ) -> list[AuditLogEntry]:
+        async with self._lock:
+            items = list(self._audit_entries_by_id.values())
+            if lead_id is not None:
+                items = [item for item in items if item.lead_id == lead_id]
+            items.sort(key=lambda item: (item.created_at, item.id), reverse=True)
+            return items[offset : offset + limit]

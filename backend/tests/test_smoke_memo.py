@@ -1,5 +1,4 @@
 import pytest
-import re
 from httpx import ASGITransport, AsyncClient
 
 from app.core.config import get_settings
@@ -7,235 +6,177 @@ from app.core.deps import reset_container
 from app.main import create_app
 
 
+async def login_as(client: AsyncClient, role: str) -> None:
+    response = await client.post("/api/v1/session/role", json={"role": role})
+    assert response.status_code == 200
+
+
 @pytest.mark.anyio
-async def test_smoke_create_and_move_stage(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_manager_scope_and_return_request_flow(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("STORAGE_MODE", "memo")
+    monkeypatch.setenv("SESSION_SECRET", "test-secret")
     get_settings.cache_clear()
     reset_container()
 
     app = create_app()
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        create_resp = await client.post(
+        await login_as(client, "sales_head")
+        foreign_resp = await client.post(
             "/api/v1/leads",
             json={
                 "source_code": "website",
-                "owner": "manager_1",
-                "title": "New inbound lead",
-                "notes": "Interested in annual subscription",
+                "owner": "manager_2",
+                "title": "Foreign lead",
+                "notes": "owned by manager 2",
             },
         )
-        assert create_resp.status_code == 201
-        lead = create_resp.json()
-        assert lead["current_stage"] == "new"
+        assert foreign_resp.status_code == 201
+        foreign_lead = foreign_resp.json()
+
+        await login_as(client, "manager_1")
+        own_resp = await client.post(
+            "/api/v1/leads",
+            json={
+                "source_code": "event",
+                "title": "Own lead",
+                "notes": "owned by manager 1",
+            },
+        )
+        assert own_resp.status_code == 201
+        own_lead = own_resp.json()
+        assert own_lead["owner"] == "manager_1"
+
+        list_resp = await client.get("/api/v1/leads")
+        assert list_resp.status_code == 200
+        listed_uids = {item["lead_uid"] for item in list_resp.json()}
+        assert own_lead["lead_uid"] in listed_uids
+        assert foreign_lead["lead_uid"] not in listed_uids
+
+        foreign_get = await client.get(f"/api/v1/leads/{foreign_lead['lead_uid']}")
+        assert foreign_get.status_code == 403
+
+        patch_resp = await client.patch(
+            f"/api/v1/leads/{own_lead['lead_uid']}",
+            json={"title": "Should fail"},
+        )
+        assert patch_resp.status_code == 403
 
         move_resp = await client.post(
-            f"/api/v1/leads/{lead['lead_uid']}/stage",
-            json={
-                "stage": "qualified",
-                "author": "manager_2",
-                "comment": "Reached out and confirmed budget",
-            },
+            f"/api/v1/leads/{own_lead['lead_uid']}/stage",
+            json={"stage": "qualified", "comment": "Qualified"},
         )
         assert move_resp.status_code == 200
-        moved = move_resp.json()
-        assert moved["lead"]["current_stage"] == "qualified"
-        assert moved["stage_event"]["stage"] == "qualified"
-        assert moved["stage_event"]["comment"]["comment"] == "Reached out and confirmed budget"
+        assert move_resp.json()["lead"]["current_stage"] == "qualified"
 
-        proposal_resp = await client.post(
-            f"/api/v1/leads/{lead['lead_uid']}/stage",
-            json={
-                "stage": "proposal",
-                "author": "manager_2",
-                "comment": "Sent proposal",
-            },
+        invalid_back_resp = await client.post(
+            f"/api/v1/leads/{own_lead['lead_uid']}/stage",
+            json={"stage": "new", "comment": "Back"},
         )
-        assert proposal_resp.status_code == 200
+        assert invalid_back_resp.status_code == 400
 
-        back_to_new_resp = await client.post(
-            f"/api/v1/leads/{lead['lead_uid']}/stage",
-            json={
-                "stage": "new",
-                "author": "manager_2",
-                "comment": "Restarted qualification",
-            },
+        return_request_resp = await client.post(
+            f"/api/v1/leads/{own_lead['lead_uid']}/return-requests",
+            json={"comment": "Need to go back"},
         )
-        assert back_to_new_resp.status_code == 200
+        assert return_request_resp.status_code == 200
+        request_payload = return_request_resp.json()
+        assert request_payload["from_stage"] == "qualified"
+        assert request_payload["to_stage"] == "new"
+        assert request_payload["status"] == "pending"
 
-        stages_resp = await client.get(f"/api/v1/leads/{lead['lead_uid']}/stages")
-        assert stages_resp.status_code == 200
-        stages = stages_resp.json()
-        assert len(stages) == 4
-        assert [item["stage"] for item in stages] == ["new", "qualified", "proposal", "new"]
+        await login_as(client, "sales_head")
+        approve_resp = await client.post(
+            f"/api/v1/return-requests/{request_payload['id']}/approve",
+            json={"review_comment": "Approved"},
+        )
+        assert approve_resp.status_code == 200
+        assert approve_resp.json()["status"] == "approved"
 
-        list_resp = await client.get("/api/v1/leads")
-        assert list_resp.status_code == 200
-        items = list_resp.json()
-        listed = next(item for item in items if item["lead_uid"] == lead["lead_uid"])
-        assert "stage_info" in listed
-        assert [item["stage"] for item in listed["stage_info"]] == ["new", "qualified", "proposal", "new"]
-        assert sum(1 for item in listed["stage_info"] if item["stage"] == "new") == 2
-        new_stages = [item for item in listed["stage_info"] if item["stage"] == "new"]
-        qualified_stage = next(item for item in listed["stage_info"] if item["stage"] == "qualified")
-        assert new_stages[0]["left_at"] is not None
-        assert new_stages[1]["left_at"] is None
-        assert qualified_stage["left_at"] is not None
-        assert qualified_stage["approved"] is True
-        assert new_stages[0]["comment"] == []
-        assert qualified_stage["comment"] == [
-            {"author": "manager_2", "comment": "Reached out and confirmed budget"}
-        ]
-
-        get_resp = await client.get(f"/api/v1/leads/{lead['lead_uid']}")
-        assert get_resp.status_code == 200
-        got = get_resp.json()
-        assert got["lead_uid"] == lead["lead_uid"]
-        assert [item["stage"] for item in got["stage_info"]] == ["new", "qualified", "proposal", "new"]
-        qualified_stage = next(item for item in got["stage_info"] if item["stage"] == "qualified")
-        assert qualified_stage["comment"] == [
-            {"author": "manager_2", "comment": "Reached out and confirmed budget"}
-        ]
+        detail_resp = await client.get(f"/api/v1/leads/{own_lead['lead_uid']}")
+        assert detail_resp.status_code == 200
+        detail = detail_resp.json()
+        assert detail["current_stage"] == "new"
+        assert len(detail["return_requests"]) == 1
+        assert any(entry["action_type"] == "return_request_approved" for entry in detail["audit_entries"])
 
 
 @pytest.mark.anyio
-async def test_new_lead_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_analyst_is_read_only_but_can_view_reports_and_export(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("STORAGE_MODE", "memo")
+    monkeypatch.setenv("SESSION_SECRET", "test-secret")
     get_settings.cache_clear()
     reset_container()
 
     app = create_app()
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await login_as(client, "sales_head")
         response = await client.post(
-            "/api/v1/new-lead",
-            json={
-                "owner": "manager_1",
-                "title": "Lead from legacy endpoint",
-                "notes": "Created via /new-lead",
-            },
-        )
-
-        assert response.status_code == 200
-        payload = response.json()
-        assert payload["owner"] == "manager_1"
-        assert payload["current_stage"] == "new"
-        assert payload["source_code"] == "other"
-
-
-@pytest.mark.anyio
-async def test_generated_lead_uid_has_short_alphanumeric_format(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("STORAGE_MODE", "memo")
-    get_settings.cache_clear()
-    reset_container()
-
-    app = create_app()
-    generated_uids: set[str] = set()
-
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        for index in range(12):
-            response = await client.post(
-                "/api/v1/leads",
-                json={
-                    "source_code": "website",
-                    "owner": "manager_1",
-                    "title": f"Lead {index}",
-                    "notes": "Format check",
-                },
-            )
-
-            assert response.status_code == 201
-            lead_uid = response.json()["lead_uid"]
-            assert re.fullmatch(r"[A-Za-z0-9]{5}", lead_uid)
-            assert lead_uid not in generated_uids
-            generated_uids.add(lead_uid)
-
-
-@pytest.mark.anyio
-async def test_delete_lead_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("STORAGE_MODE", "memo")
-    get_settings.cache_clear()
-    reset_container()
-
-    app = create_app()
-
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        create_resp = await client.post(
             "/api/v1/leads",
             json={
                 "source_code": "website",
                 "owner": "manager_1",
-                "title": "To be deleted",
-                "notes": "Delete me",
+                "title": "Report lead",
+                "notes": "for analytics",
             },
         )
-        assert create_resp.status_code == 201
-        lead = create_resp.json()
+        assert response.status_code == 201
 
-        delete_resp = await client.delete(f"/api/v1/leads/{lead['lead_uid']}")
-        assert delete_resp.status_code == 204
-        assert delete_resp.content in (b"", None)
-
-        get_resp = await client.get(f"/api/v1/leads/{lead['lead_uid']}")
-        assert get_resp.status_code == 404
-
+        await login_as(client, "analyst")
         list_resp = await client.get("/api/v1/leads")
         assert list_resp.status_code == 200
-        assert all(item["lead_uid"] != lead["lead_uid"] for item in list_resp.json())
+        assert len(list_resp.json()) == 1
 
-        delete_again_resp = await client.delete(f"/api/v1/leads/{lead['lead_uid']}")
-        assert delete_again_resp.status_code == 404
+        create_resp = await client.post(
+            "/api/v1/leads",
+            json={"source_code": "website", "title": "Nope", "notes": "Denied"},
+        )
+        assert create_resp.status_code == 403
+
+        reports_resp = await client.get("/api/v1/reports/summary")
+        assert reports_resp.status_code == 200
+        reports = reports_resp.json()
+        assert reports["total_leads"] == 1
+        assert any(item["stage"] == "new" and item["count"] == 1 for item in reports["counts"])
+
+        export_resp = await client.get("/api/v1/leads/export?file_type=csv")
+        assert export_resp.status_code == 200
+        assert "lead_uid;title;notes;owner;stage;entered_at;source_code" in export_resp.text
 
 
 @pytest.mark.anyio
-async def test_patch_lead_updates_only_provided_fields(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_sales_head_can_force_closed_lead_transition(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("STORAGE_MODE", "memo")
+    monkeypatch.setenv("SESSION_SECRET", "test-secret")
     get_settings.cache_clear()
     reset_container()
 
     app = create_app()
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await login_as(client, "sales_head")
         create_resp = await client.post(
             "/api/v1/leads",
             json={
-                "source_code": "website",
+                "source_code": "event",
                 "owner": "manager_1",
-                "title": "Initial title",
-                "notes": "Initial notes",
+                "title": "Conference lead",
+                "notes": "Needs manual reopening",
             },
         )
         assert create_resp.status_code == 201
-        lead = create_resp.json()
+        lead_uid = create_resp.json()["lead_uid"]
 
-        patch_owner_resp = await client.patch(
-            f"/api/v1/leads/{lead['lead_uid']}",
-            json={"owner": "manager_2"},
+        to_won_resp = await client.post(
+            f"/api/v1/leads/{lead_uid}/stage",
+            json={"stage": "won", "comment": "Closed"},
         )
-        assert patch_owner_resp.status_code == 200
-        patched = patch_owner_resp.json()
-        assert patched["owner"] == "manager_2"
-        assert patched["title"] == "Initial title"
-        assert patched["notes"] == "Initial notes"
+        assert to_won_resp.status_code == 200
 
-        patch_clear_title_resp = await client.patch(
-            f"/api/v1/leads/{lead['lead_uid']}",
-            json={"title": None},
+        reopen_resp = await client.post(
+            f"/api/v1/leads/{lead_uid}/stage",
+            json={"stage": "proposal", "comment": "Reopened by sales head"},
         )
-        assert patch_clear_title_resp.status_code == 200
-        patched = patch_clear_title_resp.json()
-        assert patched["owner"] == "manager_2"
-        assert patched["title"] is None
-        assert patched["notes"] == "Initial notes"
-
-        patch_notes_resp = await client.patch(
-            f"/api/v1/leads/{lead['lead_uid']}",
-            json={"notes": "Updated notes"},
-        )
-        assert patch_notes_resp.status_code == 200
-        patched = patch_notes_resp.json()
-        assert patched["owner"] == "manager_2"
-        assert patched["title"] is None
-        assert patched["notes"] == "Updated notes"
+        assert reopen_resp.status_code == 200
+        assert reopen_resp.json()["lead"]["current_stage"] == "proposal"

@@ -47,20 +47,21 @@ def parse_leads_import(
     *,
     filename: str | None = None,
     content_type: str | None = None,
+    default_owner: Users | None = None,
 ) -> list[LeadImportRow]:
     fmt = _detect_format(filename=filename, content_type=content_type)
 
     if fmt == "csv":
-        return _parse_csv(data)
+        return _parse_csv(data, default_owner=default_owner)
     if fmt == "xlsx":
-        return _parse_xlsx(data)
+        return _parse_xlsx(data, default_owner=default_owner)
 
     errors: list[str] = []
     for fallback in ("csv", "xlsx"):
         try:
             if fallback == "csv":
-                return _parse_csv(data)
-            return _parse_xlsx(data)
+                return _parse_csv(data, default_owner=default_owner)
+            return _parse_xlsx(data, default_owner=default_owner)
         except LeadsImportError as exc:
             errors.append(f"{fallback}: {exc.message}")
 
@@ -89,7 +90,7 @@ def _detect_format(*, filename: str | None, content_type: str | None) -> str | N
     return None
 
 
-def _parse_csv(data: bytes) -> list[LeadImportRow]:
+def _parse_csv(data: bytes, *, default_owner: Users | None) -> list[LeadImportRow]:
     text = _decode_text(data)
     # Normalize newlines and allow both ',' and ';' delimiters.
     stream = StringIO(text.replace("\r\n", "\n").replace("\r", "\n"))
@@ -106,14 +107,14 @@ def _parse_csv(data: bytes) -> list[LeadImportRow]:
     if reader.fieldnames is None:
         raise LeadsImportError("CSV header row is missing.")
 
-    header_map = _build_header_map(reader.fieldnames)
+    header_map = _build_header_map(reader.fieldnames, default_owner=default_owner)
     rows: list[LeadImportRow] = []
     errors: list[LeadImportRowError] = []
 
     for idx, raw in enumerate(reader, start=2):
         if _row_is_empty(raw):
             continue
-        payload = _extract_required(raw, header_map, row_number=idx)
+        payload = _extract_required(raw, header_map, row_number=idx, default_owner=default_owner)
         try:
             rows.append(LeadImportRow.model_validate(payload))
         except ValidationError as exc:
@@ -126,7 +127,7 @@ def _parse_csv(data: bytes) -> list[LeadImportRow]:
     return rows
 
 
-def _parse_xlsx(data: bytes) -> list[LeadImportRow]:
+def _parse_xlsx(data: bytes, *, default_owner: Users | None) -> list[LeadImportRow]:
     try:
         zf = zipfile.ZipFile(BytesIO(data))
     except zipfile.BadZipFile as exc:
@@ -139,7 +140,7 @@ def _parse_xlsx(data: bytes) -> list[LeadImportRow]:
         raise LeadsImportError("XLSX contains no rows.")
 
     header = [str(v or "").strip() for v in rows[0]]
-    header_map = _build_header_map(header)
+    header_map = _build_header_map(header, default_owner=default_owner)
 
     out: list[LeadImportRow] = []
     errors: list[LeadImportRowError] = []
@@ -147,7 +148,12 @@ def _parse_xlsx(data: bytes) -> list[LeadImportRow]:
         raw_dict = {header[j]: (values[j] if j < len(values) else None) for j in range(len(header))}
         if _row_is_empty(raw_dict):
             continue
-        payload = _extract_required(raw_dict, header_map, row_number=i)
+        payload = _extract_required(
+            raw_dict,
+            header_map,
+            row_number=i,
+            default_owner=default_owner,
+        )
         try:
             out.append(LeadImportRow.model_validate(payload))
         except ValidationError as exc:
@@ -173,14 +179,17 @@ def _normalize_column(name: str) -> str:
     return re.sub(r"[\s\-]+", "_", name.strip().lower())
 
 
-def _build_header_map(fieldnames: list[str]) -> dict[str, str]:
+def _build_header_map(fieldnames: list[str], *, default_owner: Users | None) -> dict[str, str]:
     mapping: dict[str, str] = {}
     for name in fieldnames:
         normalized = _normalize_column(name)
         if normalized:
             mapping[normalized] = name
 
-    missing = [col for col in _REQUIRED_COLUMNS if col not in mapping]
+    required_columns = tuple(
+        col for col in _REQUIRED_COLUMNS if not (col == "owner" and default_owner is not None)
+    )
+    missing = [col for col in required_columns if col not in mapping]
     if missing:
         raise LeadsImportError(f"Missing required columns: {', '.join(missing)}.")
     return mapping
@@ -201,9 +210,14 @@ def _extract_required(
     header_map: dict[str, str],
     *,
     row_number: int,
+    default_owner: Users | None,
 ) -> dict[str, Any]:
     out: dict[str, Any] = {}
     for required in _REQUIRED_COLUMNS:
+        if required == "owner" and default_owner is not None and required not in header_map:
+            out[required] = default_owner
+            continue
+
         key = header_map[required]
         val = raw_row.get(key)
         if isinstance(val, str):
@@ -351,4 +365,3 @@ def _xlsx_read_rows(
         out.append([values_by_col.get(i) for i in range(1, max_col + 1)])
 
     return out
-
