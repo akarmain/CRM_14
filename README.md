@@ -44,3 +44,19 @@ npm run dev
 | Рахимов Шамиль Рашитович ЭФБО-02-25 | Full-stack (UI) |
 | Маркина Майя Витальевна ЭФБО-02-25 | Full-stack (API) |
 | Полухина Елизавета Константиновна ЭФБО-02-25 | Full-stack (Data / KPI) |
+
+
+## Test documentation (MkDocs Material)
+
+```bash
+python3 -m pip install -r docs-requirements.txt
+mkdocs serve
+```
+
+Build static site:
+
+```bash
+mkdocs build
+```
+
+Documentation entrypoint: `docs/index.md`

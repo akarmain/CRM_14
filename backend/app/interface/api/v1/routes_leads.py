@@ -198,15 +198,22 @@ async def export_leads(
     ensure_permission(role, "can_export_leads")
 
     owner_filter = owner
-    rows = await use_case.execute(owner=owner_filter)
 
     fmt = "csv" if file_type in ("scv", "csv") else "xlsx"
     if fmt == "csv":
+        rows = await use_case.execute(owner=owner_filter)
         content = render_leads_csv(rows)
         media_type = "text/csv; charset=utf-8"
         ext = "csv"
     else:
-        content = render_leads_xlsx(rows)
+        export_data = await use_case.execute_with_stage_events(owner=owner_filter)
+        export_time_utc = datetime.now(UTC)
+        content = render_leads_xlsx(
+            export_data.rows,
+            stage_events_by_lead_uid=export_data.stage_events_by_lead_uid,
+            export_time_utc=export_time_utc,
+            owner_filter=owner_filter,
+        )
         media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         ext = "xlsx"
 

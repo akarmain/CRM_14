@@ -23,7 +23,7 @@ from app.application.use_cases.move_stage import MoveStageUseCase
 from app.application.use_cases.update_lead import UpdateLeadUseCase
 from app.core.config import get_settings
 from app.infrastructure.memo.repo import MemoRepositories
-from app.infrastructure.onec.repo_stub import OneCRepositoryStub
+from app.infrastructure.onec.repo import OneCRepository
 from app.infrastructure.sql.db import DatabaseManager
 from app.infrastructure.sql.repo import PostgresRepositories
 
@@ -34,8 +34,8 @@ def _get_memo_repo() -> MemoRepositories:
 
 
 @lru_cache
-def _get_onec_repo() -> OneCRepositoryStub:
-    return OneCRepositoryStub()
+def _get_onec_repo() -> OneCRepository:
+    return OneCRepository()
 
 
 @lru_cache

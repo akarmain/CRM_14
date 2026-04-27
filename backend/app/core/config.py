@@ -7,6 +7,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     storage_mode: Literal["postgres", "memo", "1c"] = "postgres"
     database_url: str = "postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/mini_crm_simple"
+    onec_base_url: str = "http://127.0.0.1:8314/Infobase/hs/http_methods"
+    onec_timeout_seconds: float = 5.0
+    onec_max_retries: int = 3
+    onec_retry_backoff_seconds: float = 0.35
     log_level: str = "INFO"
     session_secret: str = "mini-crm-simple-dev-secret"
     cors_allowed_origins: str = ",".join([

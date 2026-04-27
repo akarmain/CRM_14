@@ -1,9 +1,17 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from app.application.dtos import LeadExportRow
 from app.application.ports import LeadRepository, StageEventRepository
 from app.domain.entities import LeadStageEvent
 from app.domain.enums import LeadStage, Users
+
+
+@dataclass(slots=True)
+class LeadExportData:
+    rows: list[LeadExportRow]
+    stage_events_by_lead_uid: dict[str, list[LeadStageEvent]]
 
 
 class ExportLeadsUseCase:
@@ -12,7 +20,12 @@ class ExportLeadsUseCase:
         self._stage_repository = stage_repository
 
     async def execute(self, *, owner: Users | None) -> list[LeadExportRow]:
+        result = await self.execute_with_stage_events(owner=owner)
+        return result.rows
+
+    async def execute_with_stage_events(self, *, owner: Users | None) -> LeadExportData:
         rows: list[LeadExportRow] = []
+        stage_events_by_lead_uid: dict[str, list[LeadStageEvent]] = {}
 
         limit = 200
         offset = 0
@@ -29,6 +42,7 @@ class ExportLeadsUseCase:
 
             for lead in leads:
                 events = await self._stage_repository.list_by_lead(lead.id)
+                stage_events_by_lead_uid[lead.lead_uid] = events
                 entered_at = _resolve_entered_at(
                     events=events,
                     current_stage=lead.current_stage,
@@ -49,7 +63,10 @@ class ExportLeadsUseCase:
                 break
             offset += limit
 
-        return rows
+        return LeadExportData(
+            rows=rows,
+            stage_events_by_lead_uid=stage_events_by_lead_uid,
+        )
 
 
 def _resolve_entered_at(*, events: list[LeadStageEvent], current_stage: LeadStage):

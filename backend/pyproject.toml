@@ -16,6 +16,7 @@ dependencies = [
   "requests>=2.32.5",
   "sqlalchemy>=2.0.43",
   "uvicorn[standard]>=0.30.0,<1.0.0",
+  "xlsxwriter>=3.2.0",
 ]
 
 [dependency-groups]
