@@ -8,7 +8,7 @@ from io import BytesIO, StringIO
 from typing import Any
 from xml.etree import ElementTree as ET
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError, field_validator
 
 from app.domain.enums import SourcesCode, Users
 
@@ -18,6 +18,16 @@ class LeadImportRow(BaseModel):
     title: str | None = Field(default=None, max_length=255)
     notes: str | None = None
     source_code: SourcesCode
+    lead_uid: str | None = Field(default=None, max_length=32)
+
+    @field_validator("lead_uid", mode="before")
+    @classmethod
+    def _normalize_lead_uid(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            value = value.strip()
+            if value == "":
+                return None
+        return value
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,6 +50,7 @@ class LeadsImportError(Exception):
 
 
 _REQUIRED_COLUMNS = ("owner", "title", "notes", "source_code")
+_OPTIONAL_COLUMNS = ("lead_uid",)
 
 
 def parse_leads_import(
@@ -114,7 +125,7 @@ def _parse_csv(data: bytes, *, default_owner: Users | None) -> list[LeadImportRo
     for idx, raw in enumerate(reader, start=2):
         if _row_is_empty(raw):
             continue
-        payload = _extract_required(raw, header_map, row_number=idx, default_owner=default_owner)
+        payload = _extract_row_payload(raw, header_map, row_number=idx, default_owner=default_owner)
         try:
             rows.append(LeadImportRow.model_validate(payload))
         except ValidationError as exc:
@@ -148,7 +159,7 @@ def _parse_xlsx(data: bytes, *, default_owner: Users | None) -> list[LeadImportR
         raw_dict = {header[j]: (values[j] if j < len(values) else None) for j in range(len(header))}
         if _row_is_empty(raw_dict):
             continue
-        payload = _extract_required(
+        payload = _extract_row_payload(
             raw_dict,
             header_map,
             row_number=i,
@@ -205,7 +216,7 @@ def _row_is_empty(row: dict[str, Any]) -> bool:
     return True
 
 
-def _extract_required(
+def _extract_row_payload(
     raw_row: dict[str, Any],
     header_map: dict[str, str],
     *,
@@ -219,12 +230,12 @@ def _extract_required(
             continue
 
         key = header_map[required]
-        val = raw_row.get(key)
-        if isinstance(val, str):
-            val = val.strip()
-            if val == "":
-                val = None
-        out[required] = val
+        out[required] = _normalize_cell_value(raw_row.get(key))
+
+    for optional in _OPTIONAL_COLUMNS:
+        key = header_map.get(optional)
+        if key is not None:
+            out[optional] = _normalize_cell_value(raw_row.get(key))
 
     if out["owner"] is None:
         raise LeadsImportError("Some rows are invalid.", errors=[LeadImportRowError(row=row_number, message="owner is required")])
@@ -234,6 +245,14 @@ def _extract_required(
             errors=[LeadImportRowError(row=row_number, message="source_code is required")],
         )
     return out
+
+
+def _normalize_cell_value(value: Any) -> Any:
+    if isinstance(value, str):
+        value = value.strip()
+        if value == "":
+            return None
+    return value
 
 
 def _format_validation_error(exc: ValidationError) -> str:

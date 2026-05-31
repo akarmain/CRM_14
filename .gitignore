@@ -4,10 +4,22 @@
 !.env.example
 !**/.env.example
 
+# Local-only internal docs (infrastructure / credentials — NOT for publication)
+/AI_AGENT_STARTUP_RUNBOOK.md
+/ONEC_SERVER_GUIDE.md
+/DOCUMENTATION_AUDIT.md
+/backend/app/infrastructure/onec/test.py
+
+# Scratch / leftovers
+/del_3/
+# Project standardizes on npm; do not commit a second lockfile
+pnpm-lock.yaml
+
 .idea/
 .vscode/
 .vscode/*
 !.vscode/extensions.json
+.claude/
 
 __pycache__/
 *.pyc
@@ -41,3 +53,4 @@ coverage/
 *.njsproj
 *.sln
 *.sw?
+.playwright-mcp

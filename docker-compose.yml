@@ -14,6 +14,11 @@ services:
     environment:
       STORAGE_MODE: ${STORAGE_MODE:-postgres}
       DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@postgres:5432/mini_crm_simple}
+      ONEC_BASE_URL: ${ONEC_BASE_URL:-http://host.docker.internal:8314/Infobase/hs/http_methods}
+      ONEC_TIMEOUT_SECONDS: ${ONEC_TIMEOUT_SECONDS:-10}
+      ONEC_MAX_RETRIES: ${ONEC_MAX_RETRIES:-3}
+      ONEC_RETRY_BACKOFF_SECONDS: ${ONEC_RETRY_BACKOFF_SECONDS:-0.35}
+      UV_HTTP_TIMEOUT: ${UV_HTTP_TIMEOUT:-120}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       SESSION_SECRET: ${SESSION_SECRET:-mini-crm-simple-dev-secret}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}

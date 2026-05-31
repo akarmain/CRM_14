@@ -4,9 +4,11 @@ from xml.etree import ElementTree as ET
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+from xlsxwriter import Workbook
 
 from app.core.config import get_settings
 from app.core.deps import reset_container
+from app.interface.api.v1.leads_import import parse_leads_import
 from app.main import create_app
 
 
@@ -64,6 +66,17 @@ def _xlsx_row_values(zf: zipfile.ZipFile, sheet_path: str, row_number: int) -> l
         else:
             values.append(raw)
     return values
+
+
+def _make_xlsx(rows: list[list[str]]) -> bytes:
+    output = BytesIO()
+    workbook = Workbook(output, {"in_memory": True})
+    worksheet = workbook.add_worksheet()
+    for row_idx, row in enumerate(rows):
+        for col_idx, value in enumerate(row):
+            worksheet.write(row_idx, col_idx, value)
+    workbook.close()
+    return output.getvalue()
 
 
 @pytest.mark.anyio
@@ -198,6 +211,104 @@ async def test_analyst_is_read_only_but_can_view_reports_and_export(monkeypatch:
         export_resp = await client.get("/api/v1/leads/export?file_type=csv")
         assert export_resp.status_code == 200
         assert "lead_uid;title;notes;owner;stage;entered_at;source_code" in export_resp.text
+
+
+@pytest.mark.anyio
+async def test_import_csv_uses_lead_uid_and_skips_duplicates(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("STORAGE_MODE", "memo")
+    monkeypatch.setenv("SESSION_SECRET", "test-secret")
+    get_settings.cache_clear()
+    reset_container()
+
+    app = create_app()
+    csv_body = (
+        "lead_uid;owner;title;notes;source_code\n"
+        "ROUNDTRIP001;manager_1;Round trip lead;Imported once;website\n"
+    ).encode("utf-8")
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await login_as(client, "sales_head")
+
+        first_resp = await client.post(
+            "/api/v1/leads/import",
+            files={"file": ("leads.csv", csv_body, "text/csv")},
+        )
+        assert first_resp.status_code == 201
+        assert first_resp.json()["created"] == 1
+        assert first_resp.json()["lead_uids"] == ["ROUNDTRIP001"]
+        assert first_resp.json()["skipped"] == 0
+
+        list_resp = await client.get("/api/v1/leads")
+        assert list_resp.status_code == 200
+        assert [item["lead_uid"] for item in list_resp.json()] == ["ROUNDTRIP001"]
+
+        second_resp = await client.post(
+            "/api/v1/leads/import",
+            files={"file": ("leads.csv", csv_body, "text/csv")},
+        )
+        assert second_resp.status_code == 201
+        assert second_resp.json()["created"] == 0
+        assert second_resp.json()["lead_uids"] == []
+        assert second_resp.json()["skipped"] == 1
+        assert second_resp.json()["skipped_lead_uids"] == ["ROUNDTRIP001"]
+
+        list_again_resp = await client.get("/api/v1/leads")
+        assert list_again_resp.status_code == 200
+        assert [item["lead_uid"] for item in list_again_resp.json()] == ["ROUNDTRIP001"]
+
+        duplicate_in_file_body = (
+            "lead_uid;owner;title;notes;source_code\n"
+            "INFILEDUP001;manager_1;First row;Created;website\n"
+            "INFILEDUP001;manager_1;Second row;Skipped;website\n"
+        ).encode("utf-8")
+        duplicate_resp = await client.post(
+            "/api/v1/leads/import",
+            files={"file": ("duplicate_leads.csv", duplicate_in_file_body, "text/csv")},
+        )
+        assert duplicate_resp.status_code == 201
+        assert duplicate_resp.json()["created"] == 1
+        assert duplicate_resp.json()["lead_uids"] == ["INFILEDUP001"]
+        assert duplicate_resp.json()["skipped"] == 1
+        assert duplicate_resp.json()["skipped_lead_uids"] == ["INFILEDUP001"]
+
+
+@pytest.mark.anyio
+async def test_import_csv_without_lead_uid_still_generates_uid(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("STORAGE_MODE", "memo")
+    monkeypatch.setenv("SESSION_SECRET", "test-secret")
+    get_settings.cache_clear()
+    reset_container()
+
+    app = create_app()
+    csv_body = "owner;title;notes;source_code\nmanager_2;Legacy import;No UID provided;event\n".encode("utf-8")
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await login_as(client, "sales_head")
+
+        response = await client.post(
+            "/api/v1/leads/import",
+            files={"file": ("legacy_leads.csv", csv_body, "text/csv")},
+        )
+        assert response.status_code == 201
+        payload = response.json()
+        assert payload["created"] == 1
+        assert len(payload["lead_uids"]) == 1
+        assert payload["lead_uids"][0]
+        assert payload["skipped"] == 0
+
+
+def test_xlsx_import_parser_reads_optional_lead_uid() -> None:
+    xlsx_body = _make_xlsx(
+        [
+            ["owner", "title", "notes", "source_code", "lead_uid"],
+            ["manager_1", "XLSX lead", "Imported from sheet", "website", "XLSXUID001"],
+        ]
+    )
+
+    rows = parse_leads_import(xlsx_body, filename="leads.xlsx")
+
+    assert len(rows) == 1
+    assert rows[0].lead_uid == "XLSXUID001"
 
 
 @pytest.mark.anyio

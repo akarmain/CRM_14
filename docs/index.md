@@ -31,3 +31,5 @@
 
 - [README проекта документации](000_README.md)
 - [Карта документации](000_Карта%20документации.md)
+- [Интеграция 1С и Python через Apache](05-data-and-integration/DOC-INT-002-1c-python-apache-integration.md)
+- [Интеграция 1С и Python через Docker](05-data-and-integration/DOC-INT-003-1c-python-docker-integration.md)

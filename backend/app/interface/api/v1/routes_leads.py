@@ -34,7 +34,7 @@ from app.core.deps import (
     get_stage_event_repository,
     get_update_lead_use_case,
 )
-from app.core.errors import ForbiddenError, LeadNotFoundError
+from app.core.errors import ConflictError, ForbiddenError, LeadNotFoundError
 from app.core.sentinels import UNSET
 from app.domain.enums import LeadStage, SourcesCode, Users
 from app.domain.rules import ensure_forward_transition
@@ -147,6 +147,7 @@ async def import_leads(
     request: Request,
     file: UploadFile = File(...),
     use_case: CreateLeadUseCase = Depends(get_create_lead_use_case),
+    lead_repo: LeadRepository = Depends(get_lead_repository),
     audit_repo: AuditLogRepository = Depends(get_audit_log_repository),
     db_session: AsyncSession | None = Depends(get_db_session),
 ) -> ImportLeadsResponse:
@@ -166,25 +167,53 @@ async def import_leads(
         raise HTTPException(status_code=422, detail=exc.as_detail()) from exc
 
     lead_uids: list[str] = []
+    skipped_lead_uids: list[str] = []
+    seen_import_uids: set[str] = set()
     for item in items:
-        created = await use_case.execute(
-            source_code=item.source_code,
-            owner=default_owner or item.owner,
-            title=item.title,
-            notes=item.notes,
-            lead_uid=None,
-        )
+        if item.lead_uid is not None:
+            if item.lead_uid in seen_import_uids:
+                skipped_lead_uids.append(item.lead_uid)
+                continue
+            seen_import_uids.add(item.lead_uid)
+
+            if await lead_repo.get_by_uid(item.lead_uid) is not None:
+                skipped_lead_uids.append(item.lead_uid)
+                continue
+
+        try:
+            created = await use_case.execute(
+                source_code=item.source_code,
+                owner=default_owner or item.owner,
+                title=item.title,
+                notes=item.notes,
+                lead_uid=item.lead_uid,
+            )
+        except ConflictError:
+            if item.lead_uid is not None:
+                skipped_lead_uids.append(item.lead_uid)
+                continue
+            raise
         lead_uids.append(created.lead_uid)
 
     await create_audit_entry(
         audit_repo,
         actor_role=role,
         action_type="lead_imported",
-        payload_json={"created": len(lead_uids), "filename": file.filename},
+        payload_json={
+            "created": len(lead_uids),
+            "filename": file.filename,
+            "skipped": len(skipped_lead_uids),
+            "skipped_lead_uids": skipped_lead_uids,
+        },
         lead_id=None,
     )
     await _commit_if_needed(db_session)
-    return ImportLeadsResponse(created=len(lead_uids), lead_uids=lead_uids)
+    return ImportLeadsResponse(
+        created=len(lead_uids),
+        lead_uids=lead_uids,
+        skipped=len(skipped_lead_uids),
+        skipped_lead_uids=skipped_lead_uids,
+    )
 
 
 @router.get("/leads/export")

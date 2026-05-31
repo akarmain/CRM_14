@@ -142,6 +142,8 @@ class MoveStageResponse(BaseModel):
 class ImportLeadsResponse(BaseModel):
     created: int
     lead_uids: list[str]
+    skipped: int = 0
+    skipped_lead_uids: list[str] = Field(default_factory=list)
 
 
 class FunnelCountResponse(BaseModel):

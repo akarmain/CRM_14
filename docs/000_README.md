@@ -111,6 +111,11 @@ Backend:
 - CSV/XLSX импорт;
 - Excel/CSV экспорт.
 
+Подробные инструкции по связи 1С и Python:
+
+- [Интеграция 1С и Python через Apache](05-data-and-integration/DOC-INT-002-1c-python-apache-integration.md);
+- [Интеграция 1С и Python через Docker](05-data-and-integration/DOC-INT-003-1c-python-docker-integration.md).
+
 Принятое допущение: в презентации в блоке БД указаны 1С и Python Connector, а в схеме БД указан PostgreSQL. В документации это сведено так: PostgreSQL описывает логическую модель, 1С используется как учебный контур данных и обмена.
 
 ## Ключевые KPI

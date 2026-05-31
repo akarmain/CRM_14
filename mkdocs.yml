@@ -1,7 +1,7 @@
-site_name: CRM_14 Test Documentation
-site_description: Демонстрационная тестовая документация проекта CRM_14
-site_url: https://example.local/crm14-docs
-repo_name: DEMO_CRM_14
+site_name: CRM_14 Documentation
+site_description: Документация учебного MVP мини-CRM «CRM_14»
+repo_name: akarmain/CRM_14
+repo_url: https://gitverse.ru/akarmain/CRM_14
 
 theme:
   name: material
@@ -62,9 +62,12 @@ nav:
       - Logical Data Model: 05-data-and-integration/DOC-DAT-001-logical-data-model-and-erd.md
       - Data Dictionary: 05-data-and-integration/DOC-DAT-002-data-dictionary-and-validation-rules.md
       - API & Integration: 05-data-and-integration/DOC-INT-001-api-and-integration-contours.md
+      - 1С + Python (Apache): 05-data-and-integration/DOC-INT-002-1c-python-apache-integration.md
+      - 1С + Python (Docker): 05-data-and-integration/DOC-INT-003-1c-python-docker-integration.md
   - Final Specification:
       - Final Tech Spec: 06-final-specification/DOC-SPC-001-final-technical-specification.md
       - Module Map: 06-final-specification/DOC-SPC-002-solution-architecture-and-module-map.md
+      - As-built реализация: 06-final-specification/DOC-SPC-003-as-built-implementation.md
   - Validation & Delivery:
       - Acceptance Tests: 07-validation-and-delivery/DOC-TST-001-acceptance-test-scenarios.md
       - Demo Scenario: 07-validation-and-delivery/DOC-OPS-001-demo-scenario-and-walkthrough.md

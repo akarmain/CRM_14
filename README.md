@@ -39,24 +39,26 @@ npm run dev
 
 | ФИО | Роль |
 | --- | --- |
-| Кармаев Андрей Александрович ИНБО-30-25 | Аналитик / Project Lead |
+| Кармаев Андрей Александрович ИНБО-30-25 | Тимлид / Аналитик / Project Lead |
 | Кучин Иван Вадимович ЭПБО-01-25 | 1С-разработчик |
-| Рахимов Шамиль Рашитович ЭФБО-02-25 | Full-stack (UI) |
-| Маркина Майя Витальевна ЭФБО-02-25 | Full-stack (API) |
-| Полухина Елизавета Константиновна ЭФБО-02-25 | Full-stack (Data / KPI) |
+| Рахимов Шамиль Рашитович ЭФБО-02-25 | Backend-разработчик (API, БД, KPI) |
+| Маркина Майя Витальевна ЭФБО-02-25 | Frontend-разработчик (канбан, экраны аналитика/РОП) |
+| Полухина Елизавета Константиновна ЭФБО-02-25 | Frontend-разработчик (стартовая, интерфейс менеджера, таблица, роутинг) |
 
 
-## Test documentation (MkDocs Material)
+## Документация
+
+Единый источник правды по проекту — сайт документации в `docs/` (MkDocs Material). Точка входа: `docs/index.md`.
+
+Ключевые документы:
+
+- описание as-built реализации (фактический код): `docs/06-final-specification/DOC-SPC-003-as-built-implementation.md`;
+- интеграция 1С и Python: `docs/05-data-and-integration/DOC-INT-002-1c-python-apache-integration.md` и `DOC-INT-003-1c-python-docker-integration.md`.
+
+Локальный просмотр и сборка:
 
 ```bash
 python3 -m pip install -r docs-requirements.txt
-mkdocs serve
+mkdocs serve     # просмотр на http://127.0.0.1:8000
+mkdocs build     # статическая сборка в ./site
 ```
-
-Build static site:
-
-```bash
-mkdocs build
-```
-
-Documentation entrypoint: `docs/index.md`
