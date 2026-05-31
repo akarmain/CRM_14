@@ -38,6 +38,7 @@
 - 📝 **Аудит** — журнал ключевых действий по лидам.
 - 🗄️ **Гибкое хранилище** — PostgreSQL, in-memory или внешний 1С через HTTP-адаптер (`STORAGE_MODE`).
 
+<!-- СКРИНШОТЫ: раскомментируй этот блок после того, как положишь PNG в docs/assets/screenshots/ (имена см. в HOWTO.txt)
 ## Скриншоты
 
 | Выбор роли | Таблица лидов | Канбан |
@@ -45,6 +46,8 @@
 | ![Выбор роли](docs/assets/screenshots/01-role-select.png) | ![Таблица лидов](docs/assets/screenshots/02-leads-table.png) | ![Канбан](docs/assets/screenshots/03-kanban.png) |
 | **История лида** | **Отчёт по воронке** | **Запросы на возврат** |
 | ![История лида](docs/assets/screenshots/04-lead-history.png) | ![Отчёт](docs/assets/screenshots/05-reports.png) | ![Запросы на возврат](docs/assets/screenshots/06-return-requests.png) |
+-->
+<!-- TODO: добавить скриншоты интерфейса (см. docs/assets/screenshots/HOWTO.txt) -->
 
 ## Технологии
 
