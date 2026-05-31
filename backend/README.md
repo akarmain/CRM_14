@@ -27,9 +27,11 @@ uv sync
 cp .env.example .env
 ```
 
-По умолчанию:
-- `STORAGE_MODE=memo`
+По умолчанию (см. `.env.example`):
+- `STORAGE_MODE=postgres`
 - `LOG_LEVEL=INFO`
+
+Для запуска без БД (быстрый локальный прогон, данные не сохраняются между перезапусками) можно выставить `STORAGE_MODE=memo`.
 
 ## Запуск сервера
 

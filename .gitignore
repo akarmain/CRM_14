@@ -10,6 +10,9 @@
 /DOCUMENTATION_AUDIT.md
 /backend/app/infrastructure/onec/test.py
 
+# MkDocs build output
+/site/
+
 # Scratch / leftovers
 /del_3/
 # Project standardizes on npm; do not commit a second lockfile

@@ -13,7 +13,10 @@ from app.interface.api.v1.routes_return_requests import router as return_request
 from app.interface.api.v1.routes_session import router as session_router
 
 
-def disable_cors_security(application):
+def configure_cors(application):
+    # Учебный MVP: CORS намеренно открыт для любого origin, чтобы упростить
+    # запуск демо (frontend на любом хосте/порту + cookie-сессия). В продакшене
+    # здесь следует ограничить список origin значением settings.cors_allowed_origins.
     return CORSMiddleware(
         application,
         allow_origins=[],
@@ -48,4 +51,4 @@ def create_app() -> FastAPI:
     return application
 
 
-app = disable_cors_security(create_app())
+app = configure_cors(create_app())
