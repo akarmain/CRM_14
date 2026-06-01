@@ -12,7 +12,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Docker](https://img.shields.io/badge/Docker-compose-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/compose/)
 
-🌐 **Живое демо:** [1c-demo.akarmain.ru](https://1c-demo.akarmain.ru/leads/table)
+🌐 **Живое демо:** [1c-demo.akarmain.ru](https://1c-demo.akarmain.ru/leads/table) &nbsp;·&nbsp; 📺 **Видео-демо:** [YouTube](https://youtu.be/HjYyM2PxYMQ)
 
 </div>
 
@@ -26,6 +26,16 @@
 доступ по ролям (менеджер, руководитель отдела продаж, аналитик).
 
 Проект относится к кейсу №3 «CRM-мини: лиды и воронка продаж».
+
+## 📺 Демонстрация
+
+<div align="center">
+
+[![Видео-демо CRM_14](https://img.youtube.com/vi/HjYyM2PxYMQ/maxresdefault.jpg)](https://youtu.be/HjYyM2PxYMQ)
+
+▶️ Смотреть видео-демо на YouTube
+
+</div>
 
 ## Возможности
 
